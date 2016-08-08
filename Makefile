@@ -1,5 +1,5 @@
 
-default: run
+default: debug
 
 venv:
 	$(source "$VIRTUALENVWRAPPER_SCRIPT")
@@ -11,4 +11,7 @@ ngrok:
 run: venv
 	@python -m geveze
 
-.PHONY: default run ngrok venvxgettext --files-from messages.pot --output=tr_TR.pot
+debug: venv
+	@python -Wall -m geveze --logging=debug
+
+.PHONY: default run ngrok venv debug

@@ -14,7 +14,7 @@
 
 /*
     todo fixme
-    business logic
+    business subscriber
     1. reconnect to websocket on close
     
 * */

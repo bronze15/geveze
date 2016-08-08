@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding:utf-8
 
+import tornado.websocket
 import tornado.web
 
 from geveze.base.request_handlers import BaseHandler
