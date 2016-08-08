@@ -12,6 +12,12 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
+/*
+    todo fixme
+    business logic
+    1. reconnect to websocket on close
+    
+* */
 $(document).ready(function() {
     if (!window.console) window.console = {};
     if (!window.console.log) window.console.log = function() {};
