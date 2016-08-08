@@ -9,6 +9,7 @@ import collections
 from geveze.base.websocket_handlers import BaseWebSocketHandler
 import logging
 import uuid
+import time
 
 
 class Events(enum.Enum):
@@ -19,6 +20,7 @@ class Events(enum.Enum):
 
     left = 20
     closed_tab = 21
+    fired = 22
 
     sent_message = 30
     sent_photo = 31
@@ -47,9 +49,9 @@ class MessageHelpers(object):
 
 # noinspection PyAbstractClass
 class Subscriber(object):
-    def parse_info(self, handler):
+    def parse_info(self):
         # noinspection PyProtectedMember
-        self.parse_request_headers(handler)
+        self.parse_request_headers(self.handler)
 
     def parse_request_headers(self, handler):
         # noinspection PyProtectedMember
@@ -63,6 +65,9 @@ class Subscriber(object):
     def info(self):
         return self.__info
 
+    def send(self, json_data):
+        self.handler.write_message(message=json_data)
+
     def __init__(self, handler):
         self.__info = dict(uuid=uuid.uuid4().__str__())
         self.handler = handler
@@ -70,11 +75,10 @@ class Subscriber(object):
 
 class Room(object):
     # noinspection PyUnusedLocal
-    def update_message_cache(self, sender, message):
-        message['uuid'] = uuid.uuid4()
+    def update_message_cache(self, message):
         self.cache.append(message)
         log = "room: {room} total: {total} updated cache from: {sender} id:{uuid}".format(
-            sender=sender.subscriber.uuid,
+            sender=message['sender'],
             uuid=message['uuid'],
             total=self.cache.__len__(),
             room=self.room_id)
@@ -93,25 +97,15 @@ class Room(object):
         self.__cache = collections.deque(maxlen=cache_size)
         self.subscribers = dict()  # collections.deque(maxlen=3) :))
 
-    def message(self, sender, data):
-        message = tornado.escape.json_decode(data)
-        self.update_message_cache(sender=sender, message=message)
-        return message
-
-    # noinspection PyMethodMayBeStatic
-    def broadcast(self, sender, data):
-        message = self.message(sender=sender, data=data)
-        log = "{sender} sent a message in: {type}".format(sender=sender.subscriber.uuid, type=message.get('type'))
-        logging.debug(log)
-
-    def subscribe(self, handler, subscriber):
-        subscriber.parse_info(handler=handler)
+    def subscribe(self, subscriber):
+        subscriber.parse_info()
         self.subscribers[subscriber.uuid] = subscriber
-
         log = "{e} subscribed. Total {count} subscriber".format(
             e=subscriber.uuid,
             count=self.subscribers.keys().__len__())
         logging.debug(log)
+
+        self.emit(sender=subscriber, data=dict(type="room", action='subscribe'))
 
     def unsubscribe(self, subscriber):
         del self.subscribers[subscriber.uuid]
@@ -122,40 +116,34 @@ class Room(object):
             count=self.subscribers.keys().__len__())
         logging.debug(log)
 
+        self.emit(sender=subscriber, data=dict(type="room", action='unsubscribe'))
+
+    # noinspection PyMethodMayBeStatic
+    def emit(self, sender, data):
+        data['uuid'] = uuid.uuid4().__str__()
+        data['sender'] = sender.uuid
+        data['time'] = time.time() * 1000.0
+        data['date'] = datetime.datetime.now().__str__()
+        self.update_message_cache(message=data)
+        if data.get('type') is None:
+            pass
+        log = "{sender} sent a data in: {type}".format(
+            sender=sender.uuid,
+            type=data.get('type'))
+        logging.debug(log)
+
+        for sender in self.subscribers.values():
+            sender.send(json_data=data)
+
 
 # noinspection PyAbstractClass
 class ChatHandler(BaseWebSocketHandler):
-    """
-    https://github.com/tornadoweb/tornado/blob/master/demos/websocket/chatdemo.py
-    """
+    def on_message(self, message):
+        self.room.emit(sender=self.subscriber, data=tornado.escape.json_decode(message))
 
     def __init__(self, *args, **kwargs):
         self.subscriber = Subscriber(handler=self)
         super(ChatHandler, self).__init__(*args, **kwargs)
-
-    # noinspection PyAttributeOutsideInit,PyProtectedMember
-    def open(self, *args, **kwargs):
-        self.room = self.application.rooms[0]
-        self.room.subscribe(handler=self, subscriber=self.subscriber)
-
-    def on_message(self, message):
-        self.room.broadcast(sender=self, data=message)
-
-    def on_connection_close(self):
-        self.room.unsubscribe(subscriber=self.subscriber)
-
-    def on_close(self):
-        pass
-
-
-# noinspection PyAbstractClass
-class GevezeChatHandler(BaseWebSocketHandler):
-    def on_message(self, message):
-        self.room.broadcast(sender=self, data=message)
-
-    def __init__(self, *args, **kwargs):
-        self.subscriber = Subscriber(handler=self)
-        super(GevezeChatHandler, self).__init__(*args, **kwargs)
 
     # noinspection PyAttributeOutsideInit,PyProtectedMember,PyShadowingBuiltins
     def open(self, room):
@@ -163,7 +151,7 @@ class GevezeChatHandler(BaseWebSocketHandler):
             self.application.rooms[room] = Room(room_id=room)
 
         self.room = self.application.rooms[room]
-        self.room.subscribe(handler=self, subscriber=self.subscriber)
+        self.room.subscribe(subscriber=self.subscriber)
 
     def on_connection_close(self):
         self.room.unsubscribe(subscriber=self.subscriber)

@@ -15,7 +15,7 @@ class GevezeTests(unittest.TestCase):
     def setUpClass(cls):
         cls.encoder = json.JSONEncoder()
         cls.decoder = json.JSONDecoder()
-        cls.URL = "ws://localhost:8888/rooms/1001"
+        cls.URL = "ws://localhost:8888/rooms/1000"
 
     def setUp(self):
         self.data = dict(type="test")
@@ -24,7 +24,7 @@ class GevezeTests(unittest.TestCase):
     def test_message_bomb(self):
         ws = websocket.WebSocket()
         ws.connect(self.URL)
-        for _ in range(1):
+        for _ in range(10):
             ws.send(self.message_data)
 
 

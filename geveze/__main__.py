@@ -12,7 +12,7 @@ from tornado.options import define, parse_command_line, options
 from tornado.web import url
 
 from geveze.handlers.request import MainHandler, RoomHandler
-from geveze.handlers.websocket import ChatHandler, GevezeChatHandler
+from geveze.handlers.websocket import ChatHandler
 
 
 class User(object):
@@ -58,7 +58,7 @@ def chat_app_factory():
         (r"/", MainHandler),
         (r"/chat", ChatHandler),
         url(r"/rooms/?(?P<room>[0-9]{4,})/chat?", RoomHandler, name="room"),
-        url(r"/rooms/?(?P<room>[0-9]{4,})?", GevezeChatHandler, name="room_ws"),
+        url(r"/rooms/?(?P<room>[0-9]{4,})?", ChatHandler, name="room_ws"),
     ]
 
     return TornadoChatApp(handlers=handlers, **settings)
