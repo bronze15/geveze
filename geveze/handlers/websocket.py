@@ -5,10 +5,10 @@ import datetime
 import tornado.escape
 # noinspection PyCompatibility
 import enum
-from ua_parser import user_agent_parser
 import collections
 from geveze.base.websocket_handlers import BaseWebSocketHandler
 import logging
+import uuid
 
 
 class Events(enum.Enum):
@@ -50,66 +50,58 @@ class Subscriber(object):
     def parse_info(self, handler):
         # noinspection PyProtectedMember
         self.parse_request_headers(handler)
-        self.parse_request_args(handler)
-        self.parse_useragent()
 
     def parse_request_headers(self, handler):
         # noinspection PyProtectedMember
         self.info['ip'] = handler.request.headers._dict.get('X-Forwarded-For')
-        # noinspection PyProtectedMember
-        self.info['user-agent'] = handler.request.headers._dict.get('User-Agent')
-
-    def parse_request_args(self, handler):
-        self.info['uuid'] = handler.request.arguments["uuid"][0]
 
     @property
     def uuid(self):
-        return self.info['uuid']
+        return self.info.get('uuid')
 
     @property
     def info(self):
         return self.__info
 
-    @property
-    def useragent_info(self):
-        return self.__useragent_info
-
-    @property
-    def short_device_info(self):
-        return dict(
-            device=self.useragent_info['device']['family'],
-            os=self.useragent_info['os']['family'],
-            browser=self.useragent_info['user_agent']
-        )
-
-    def parse_useragent(self):
-        self.__useragent_info = user_agent_parser.Parse(self.info['user-agent'])
-
     def __init__(self, handler):
-        self.__info = dict()
-        self.__useragent_info = dict()
+        self.__info = dict(uuid=uuid.uuid4().__str__())
         self.handler = handler
 
 
 class Room(object):
-    def update_cache(self, data):
-        self.cache.append(data)
-
-        log = "updated cache with {data}".format(data=data)
+    # noinspection PyUnusedLocal
+    def update_message_cache(self, sender, message):
+        message['uuid'] = uuid.uuid4()
+        self.cache.append(message)
+        log = "room: {room} total: {total} updated cache from: {sender} id:{uuid}".format(
+            sender=sender.subscriber.uuid,
+            uuid=message['uuid'],
+            total=self.cache.__len__(),
+            room=self.room_id)
         logging.debug(log)
 
     @property
     def cache(self):
         return self.__cache
 
-    def __init__(self, cache_size=10):
+    @property
+    def room_id(self):
+        return self.__room_id
+
+    def __init__(self, room_id, cache_size=10):
+        self.__room_id = room_id
         self.__cache = collections.deque(maxlen=cache_size)
         self.subscribers = dict()  # collections.deque(maxlen=3) :))
 
+    def message(self, sender, data):
+        message = tornado.escape.json_decode(data)
+        self.update_message_cache(sender=sender, message=message)
+        return message
+
     # noinspection PyMethodMayBeStatic
     def broadcast(self, sender, data):
-        message = tornado.escape.json_decode(data)
-        log = "{sender} sent a message in: {type}".format(sender=sender.subscriber.uuid, type=message['type'])
+        message = self.message(sender=sender, data=data)
+        log = "{sender} sent a message in: {type}".format(sender=sender.subscriber.uuid, type=message.get('type'))
         logging.debug(log)
 
     def subscribe(self, handler, subscriber):
@@ -142,12 +134,36 @@ class ChatHandler(BaseWebSocketHandler):
         super(ChatHandler, self).__init__(*args, **kwargs)
 
     # noinspection PyAttributeOutsideInit,PyProtectedMember
-    def open(self):
+    def open(self, *args, **kwargs):
         self.room = self.application.rooms[0]
         self.room.subscribe(handler=self, subscriber=self.subscriber)
 
     def on_message(self, message):
         self.room.broadcast(sender=self, data=message)
+
+    def on_connection_close(self):
+        self.room.unsubscribe(subscriber=self.subscriber)
+
+    def on_close(self):
+        pass
+
+
+# noinspection PyAbstractClass
+class GevezeChatHandler(BaseWebSocketHandler):
+    def on_message(self, message):
+        self.room.broadcast(sender=self, data=message)
+
+    def __init__(self, *args, **kwargs):
+        self.subscriber = Subscriber(handler=self)
+        super(GevezeChatHandler, self).__init__(*args, **kwargs)
+
+    # noinspection PyAttributeOutsideInit,PyProtectedMember,PyShadowingBuiltins
+    def open(self, room):
+        if room not in self.application.rooms:
+            self.application.rooms[room] = Room(room_id=room)
+
+        self.room = self.application.rooms[room]
+        self.room.subscribe(handler=self, subscriber=self.subscriber)
 
     def on_connection_close(self):
         self.room.unsubscribe(subscriber=self.subscriber)

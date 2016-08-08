@@ -8,10 +8,11 @@ import os
 import tornado
 import tornado.httpserver
 import tornado.ioloop
-from tornado.options import define, parse_command_line
+from tornado.options import define, parse_command_line, options
+from tornado.web import url
 
-from geveze.handlers.request import MainHandler
-from geveze.handlers.websocket import ChatHandler, Room
+from geveze.handlers.request import MainHandler, RoomHandler
+from geveze.handlers.websocket import ChatHandler, GevezeChatHandler
 
 
 class User(object):
@@ -26,7 +27,7 @@ class TornadoChatApp(tornado.web.Application):
         return self.__rooms
 
     def __init__(self, handlers, **settings):
-        self.__rooms = [Room()]
+        self.__rooms = dict()
         super(TornadoChatApp, self).__init__(handlers=handlers, **settings)
 
 
@@ -38,12 +39,15 @@ def server_factory(application, xheaders=True):
 def chat_app_factory():
     define("compiled_template_cache", default=True)
     define("gzip", default=True, help="compress_response")
+    define("autoreload", default=False)
+    define("debug", default=False)
+
     parse_command_line()
 
     settings = {
-        'autoreload': True,
-        'debug': True,
-        'compress_response': True,
+        'autoreload': options.autoreload,
+        'debug': options.debug,
+        'compress_response': False,
         'serve_traceback': True,
         'template_path': os.path.join(os.path.dirname(__file__), "..", "templates"),
         'static_path': os.path.join(os.path.dirname(__file__), "..", "static"),
@@ -53,6 +57,8 @@ def chat_app_factory():
     handlers = [
         (r"/", MainHandler),
         (r"/chat", ChatHandler),
+        url(r"/rooms/?(?P<room>[0-9]{4,})/chat?", RoomHandler, name="room"),
+        url(r"/rooms/?(?P<room>[0-9]{4,})?", GevezeChatHandler, name="room_ws"),
     ]
 
     return TornadoChatApp(handlers=handlers, **settings)

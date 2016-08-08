@@ -1,5 +1,5 @@
 
-default: debug
+default: tests
 
 venv:
 	$(source "$VIRTUALENVWRAPPER_SCRIPT")
@@ -12,6 +12,9 @@ run: venv
 	@python -m geveze
 
 debug: venv
-	@python -Wall -m geveze --logging=debug
+	@python -Wall -m geveze --logging=debug --autoreload=true --debug=true
 
-.PHONY: default run ngrok venv debug
+tests:
+	@python tests/__init__.py
+
+.PHONY: default run ngrok venv debug tests

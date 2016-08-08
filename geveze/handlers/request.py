@@ -2,7 +2,6 @@
 # coding:utf-8
 import tornado.web
 
-from geveze.handlers.websocket import ChatHandler
 from geveze.shared.request_handlers import BaseRequestHandler
 
 
@@ -15,3 +14,10 @@ class MainHandler(BaseRequestHandler):
     @tornado.web.authenticated
     def get(self):
         self.render('index.html')
+
+
+# noinspection PyAbstractClass
+class RoomHandler(BaseRequestHandler):
+    @tornado.web.authenticated
+    def get(self, room):
+        self.render('room.html', room=room)
