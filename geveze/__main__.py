@@ -66,6 +66,7 @@ class ChatHandler(BaseWebSocketHandler):
 
     # noinspection PyAttributeOutsideInit,PyProtectedMember
     def open(self, *args, **kwargs):
+        # TODO. ChatHandler.waiters.has_key ile yeni sekmede açtı kontrolü
         self.user_uuid = self.request.arguments["uuid"][0]
 
         data = dict(type="join")
@@ -82,14 +83,21 @@ class ChatHandler(BaseWebSocketHandler):
         data['id'] = str(uuid.uuid4())
         data['date'] = datetime.datetime.now().__str__()
 
-        data_user = data.copy()
-        data_user['body'] = u'Konuşmaya katıldınız.'
+        data_self = data.copy()
 
-        self.write_message(data_user)
-        ChatHandler.waiters[self.user_uuid] = self
+        if ChatHandler.waiters.has_key(self.user_uuid):
+            del ChatHandler.waiters[self.user_uuid]
+            data_self['body'] = u'Yeni bir sekmede konuşmaya katıldınız.'
+            data["body"] = u"{user} yeni bir sekmede konuşmaya katıldı.".format(user=self.user_uuid)
+
+        else:
+            data_self['body'] = u'Konuşmaya katıldınız'
+
+        self.write_message(data_self)
         ChatHandler.update_cache(data)
-        ChatHandler.send_updates(data)
 
+        ChatHandler.send_updates(data)
+        ChatHandler.waiters[self.user_uuid] = self
 
     @property
     def user_data(self):
@@ -146,20 +154,18 @@ class ChatHandler(BaseWebSocketHandler):
                 raise
 
     def on_connection_close(self):
-        pass
+        # TODO ?? on_close or on_connection_close !!
+        self.on_close()
 
     def on_close(self):
         if ChatHandler.waiters.has_key(self.user_uuid):
-            # del ChatHandler.waiters[self.user_uuid]
-            pass
+            del ChatHandler.waiters[self.user_uuid]
+
         data = dict(type="leave")
         msg = u"{user} konuşmadan ayrıldı.".format(user=self.user_uuid)
         data['body'] = msg
         data['user'] = self.user_data
 
-        data_user = data.copy()
-        data_user['body'] = u'Konuşmadan ayrıldınız.'
-        # self.write_message(data)
         ChatHandler.update_cache(data)
         ChatHandler.send_updates(data)
 

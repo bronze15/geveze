@@ -26,7 +26,7 @@ $(document).ready(function() {
             return false;
         }
     });
-    $("#message").select();
+    // $("#message").select(); // for mobile debugging UX, disable focus
     updater.start();
 });
 
