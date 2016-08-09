@@ -66,7 +66,11 @@ class Subscriber(object):
         return self.__info
 
     def send(self, json_data):
-        self.handler.write_message(message=json_data)
+        # self.handler.write_message(message=json_data)
+
+        if self.handler.ws_connection is None:
+            raise WebSocketClosedError()
+        return self.handler.write_message(json_data, binary=False)
 
     def __init__(self, handler):
         self.__info = dict(uuid=uuid.uuid4().__str__())
@@ -123,7 +127,7 @@ class Room(object):
         data['uuid'] = uuid.uuid4().__str__()
         data['sender'] = sender.uuid
         data['time'] = time.time() * 1000.0
-        data['date'] = datetime.datetime.now().__str__()
+        data['date'] = datetime.datetime.now().isoformat()
         self.update_message_cache(message=data)
         if data.get('type') is None:
             pass
@@ -138,6 +142,8 @@ class Room(object):
 
 # noinspection PyAbstractClass
 class ChatHandler(BaseWebSocketHandler):
+    CORS_ORIGINS = ['localhost', '7a6907b0.ngrok.io']
+
     def on_message(self, message):
         self.room.emit(sender=self.subscriber, data=tornado.escape.json_decode(message))
 

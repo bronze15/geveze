@@ -195,6 +195,7 @@ class TextDataHandler extends DataHandler {
     }
 
     serialize(data) {
+        throw NotImplementedException();
         var blob = new Blob(data, {
             type: "text/plain"
         });

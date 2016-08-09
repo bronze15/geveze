@@ -1,7 +1,11 @@
 
-default: tests
+default: debug
 
 venv:
+	$(source "$VIRTUALENVWRAPPER_SCRIPT")
+	$(workon geveze)
+
+venv_dev:
 	$(source "$VIRTUALENVWRAPPER_SCRIPT")
 	$(workon geveze)
 
@@ -17,4 +21,12 @@ debug: venv
 tests:
 	@python tests/__init__.py
 
-.PHONY: default run ngrok venv debug tests
+
+pipgrade: venv
+	@pip install -r geveze/requirements.txt
+
+pipgrade_dev: venv_dev
+	@pip install -r geveze/requirements.dev.txt
+
+.PHONY: default run ngrok venv venv_dev debug tests pipgrade pipgrade_dev
+

@@ -68,8 +68,8 @@ let UI = {
     }
 
 };
-(function () {
 
+(function () {
     // socket = new WebSocket('wss://7a6907b0.ngrok.io/rooms/1000');
     socket = new WebSocket('ws://localhost:8888/rooms/1000');
 
