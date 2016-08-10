@@ -50,3 +50,26 @@ class AudioMessage(Document):
 class PdfMessage(Document):
     type = StringField(enum=['pdf'], required=True)
     document = UriField()
+
+
+class AvatarInfoEvent(Document):
+    type = StringField(enum=['avatar', 'avatar_change'], required=True)
+    src = StringField(required=True)
+
+
+class JoinedEvent(Document):
+    type = StringField(enum=['subscribed'], required=True)
+    user = StringField(pattern='^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-'
+                               '[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$',
+                       required=True)
+
+
+class LeftEvent(Document):
+    type = StringField(enum=['unsubscribed'], required=True)
+    user = StringField(pattern='^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-'
+                               '[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$',
+                       required=True)
+
+
+class RoomInfo(Document):
+    type = StringField(enum=['log', 'online_users'], required=True)

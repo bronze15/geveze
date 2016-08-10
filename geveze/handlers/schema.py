@@ -21,3 +21,14 @@ class MessageSchemaInfoHandler(tornado.web.RequestHandler):
         else:
             schema = geveze.schemas.Message.get_schema(ordered=True)
         self.write(schema)
+
+
+# noinspection PyAbstractClass
+class EventSchemaInfoHandler(tornado.web.RequestHandler):
+    # noinspection PyShadowingBuiltins
+    def get(self, type):
+        if type == 'avatar':
+            schema = geveze.schemas.AvatarInfoEvent.get_schema(ordered=True)
+        else:
+            schema = {}
+        self.write(schema)

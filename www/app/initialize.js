@@ -1,41 +1,30 @@
 import * as messages from "messages";
 import * as socket from "socket";
 import * as helpers from "helpers";
+import * as geveze from "./geveze";
 
 var faker = require('faker');
 
-
 document.addEventListener('DOMContentLoaded', () => {
-
-
-  console.log('Initialized app');
+  console.info('Initialized app');
   let avatars = [];
-  for (let i = 0; i < 10; i++) avatars.push(new helpers.Avatar({
-    size: 256,
-    min: 3,
-    max: 6
+  for (let i = 0; i < 3; i++) avatars.push(new helpers.AvatarImage({
+    size: 100
   }));
-  for (let avatar of avatars) document.querySelector("#avatars").appendChild(avatar.dom());
+
+  for (let _ of avatars) document.querySelector("#avatars").appendChild(_.dom());
 });
 
-
-
-let connections = [];
-let rooms = {
-  1000: 'ws://localhost:8888/rooms/1000',
-  1001: 'ws://localhost:8888/rooms/1001',
-};
-
-for (let i = 0; i < 1; i++) {
-  continue;
-
-  let conn = new socket.Connection({
-    url: rooms[1000],
-    onopen: socket.events.onopen,
-    onclose: socket.events.onclose,
-    onerror: socket.events.onerror,
-    onmessage: socket.events.onmessage
+window.apps = [];
+let N = 1;
+window.__g = null;
+for (let i = 0; i < N; i++) {
+  __g = new geveze.Geveze({
+    url: `ws://localhost:8888/rooms/1000?id=${i}`,
+    settings: {
+      recover: true
+    }
   });
 
-  connections.push(conn);
+  apps.push(__g);
 }

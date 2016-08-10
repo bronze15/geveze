@@ -10,13 +10,26 @@ from "./bitmap";
 
 var faker = require('faker');
 
-class Avatar {
+class AvatarImage {
   constructor(args) {
+
+    args = args || {};
     this.bitmap = new Bitmap();
-    this.avatar = this.new(args.size, Fake.int({
-      min: args.min,
-      max: args.max
-    }));
+    this.src = this.new(
+      args.size || 24, Fake.int({
+        min: args.min || 3,
+        max: args.max || 3
+      }));
+
+    this.args = args;
+  }
+
+  renew() {
+    this.src = this.new(
+      this.args.size || 24, Fake.int({
+        min: this.args.min || 3,
+        max: this.args.max || 3
+      }));
   }
 
   new(width, squares) {
@@ -25,10 +38,9 @@ class Avatar {
 
   dom() {
 
-
     let filename = `${faker.random.uuid()}.bmp`;
     let img = document.createElement("img");
-    img.setAttribute("src", this.avatar);
+    img.setAttribute("src", this.src);
     img.setAttribute('data-uuid', filename);
     img.classList.add("avatar");
 
@@ -71,12 +83,8 @@ class Avatar {
   }
 
   rows(squares = 5) {
-    let arr = [];
-    let luckyColorIndex = Fake.int({
-      min: 0,
-      max: 3
-    });
 
+    let arr = [];
 
     let colors = [
       [0xf0, 0xf0, 0xf0],
@@ -113,5 +121,5 @@ class Avatar {
 
 module.exports = {
   custom_faker: custom_faker,
-  Avatar: Avatar
+  AvatarImage: AvatarImage
 }

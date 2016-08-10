@@ -4,33 +4,10 @@ import datetime
 
 import tornado.escape
 # noinspection PyCompatibility
-import enum
-import collections
 from geveze.base.websocket_handlers import BaseWebSocketHandler
 import logging
 import uuid
-import time
-
-
-class Events(enum.Enum):
-    joined = 10
-    joined_first = 11
-    joined_again = 12
-    joined_newtab = 13
-
-    left = 20
-    closed_tab = 21
-    fired = 22
-
-    sent_message = 30
-    sent_photo = 31
-    sent_video = 32
-    sent_audio = 33
-    sent_file = 34
-
-    avatar = 40
-    sent_avatar_info = 41
-    changed_avatar = 42
+from geveze.handlers.enums import MessageTypeEnums
 
 
 class MessageHelpers(object):
@@ -78,38 +55,23 @@ class Subscriber(object):
 
 
 class Room(object):
-    # noinspection PyUnusedLocal
-    def update_message_cache(self, message):
-        self.cache.append(message)
-        log = "room: {room} total: {total} updated cache from: {sender} id:{uuid}".format(
-            sender=message['sender'],
-            uuid=message['uuid'],
-            total=self.cache.__len__(),
-            room=self.room_id)
-        logging.debug(log)
-
     @property
-    def cache(self):
-        return self.__cache
+    def name(self):
+        return self.__name
 
-    @property
-    def room_id(self):
-        return self.__room_id
-
-    def __init__(self, room_id, cache_size=10):
-        self.__room_id = room_id
-        self.__cache = collections.deque(maxlen=cache_size)
+    def __init__(self, name):
+        self.__name = name
         self.subscribers = dict()  # collections.deque(maxlen=3) :))
 
     def subscribe(self, subscriber):
         subscriber.parse_info()
         self.subscribers[subscriber.uuid] = subscriber
-        log = "{e} subscribed. Total {count} subscriber".format(
-            e=subscriber.uuid,
+        log = "{user} subscribed. Total {count} subscriber".format(
+            user=subscriber.uuid,
             count=self.subscribers.keys().__len__())
         logging.debug(log)
 
-        self.emit(sender=subscriber, data=dict(type="room", action='subscribe'))
+        self.emit(sender=subscriber, data=dict(type=MessageTypeEnums.subscribed.name))
 
     def unsubscribe(self, subscriber):
         del self.subscribers[subscriber.uuid]
@@ -120,21 +82,36 @@ class Room(object):
             count=self.subscribers.keys().__len__())
         logging.debug(log)
 
-        self.emit(sender=subscriber, data=dict(type="room", action='unsubscribe'))
+        self.emit(sender=subscriber, data=dict(type=MessageTypeEnums.unsubscribed.name))
+
+    def online_users(self, receiver):
+        data = dict(type='online_users', users=[k.uuid for k in self.subscribers.values()])
+        receiver.send(json_data=data)
 
     # noinspection PyMethodMayBeStatic
     def emit(self, sender, data):
-        data['uuid'] = uuid.uuid4().__str__()
-        data['sender'] = sender.uuid
-        data['time'] = time.time() * 1000.0
-        data['date'] = datetime.datetime.now().isoformat()
-        self.update_message_cache(message=data)
-        if data.get('type') is None:
+        try:
+            message_type = MessageTypeEnums[data.get('type')]
+        except KeyError:
+            log = "[!] message from {user} ignored".format(user=sender.uuid, type=data.get('type'))
+            logging.debug(log)
+            return
+
+        if message_type is MessageTypeEnums.plain:
+            data['body'] = MessageHelpers.linkify(data['body'])
+        elif message_type is MessageTypeEnums.online_users:
+            return self.online_users(receiver=sender)
+        else:
             pass
+
         log = "{sender} sent a data in: {type}".format(
             sender=sender.uuid,
-            type=data.get('type'))
+            type=message_type.name)
+
         logging.debug(log)
+
+        data['sender'] = sender.uuid
+        data['date'] = datetime.datetime.now().isoformat()
 
         for sender in self.subscribers.values():
             sender.send(json_data=data)
@@ -154,7 +131,7 @@ class ChatHandler(BaseWebSocketHandler):
     # noinspection PyAttributeOutsideInit,PyProtectedMember,PyShadowingBuiltins
     def open(self, room):
         if room not in self.application.rooms:
-            self.application.rooms[room] = Room(room_id=room)
+            self.application.rooms[room] = Room(name=room)
 
         self.room = self.application.rooms[room]
         self.room.subscribe(subscriber=self.subscriber)

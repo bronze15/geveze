@@ -12,7 +12,7 @@ from tornado.options import define, parse_command_line, options
 from tornado.web import url
 
 from geveze.handlers.request import MainHandler, RoomHandler
-from geveze.handlers.schema import MessageSchemaInfoHandler
+from geveze.handlers.schema import MessageSchemaInfoHandler, EventSchemaInfoHandler
 from geveze.handlers.websocket import ChatHandler
 
 
@@ -45,8 +45,8 @@ def schema_app_factory():
     settings = dict()
 
     handlers = [
-        url(r"/schema/message", MessageSchemaInfoHandler, name='message'),
-        url(r"/schema/message/?(?P<type>[\w-]+)?", MessageSchemaInfoHandler, name='plain_message')
+        url(r"/schema/messages/?(?P<type>[\w-]+)?", MessageSchemaInfoHandler, name='messages'),
+        url(r"/schema/events/?(?P<type>[\w-]+)?", EventSchemaInfoHandler, name='events')
     ]
 
     return TornadoApp(handlers=handlers, **settings)
