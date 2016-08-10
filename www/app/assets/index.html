@@ -2,28 +2,46 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
     <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
-    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+    <!-- <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" /> -->
+    <!-- <meta name="viewport" content="initial-scale=1.0, user-scalable=no" /> -->
+    
     <title>Brunch with ES6</title>
     <script src="/vendor.js"></script>
     <script src="/app.js"></script>
     <script>require('initialize');</script>
+    <link rel="stylesheet" href="/css/styles.css">
     <style>
-      img.avatar {
-          padding: 0;
-          margin: 2px;
-          border: thin solid black;
-      }
+    img.avatar {
+    padding: 0;
+    margin: 2px;
+    border: thin solid black;
+    }
     </style>
   </head>
   <body>
     <div id="app"></div>
     <div id="inbox">
     </div>
-
     <div id="avatars">
       
     </div>
+    <div id="body">
+      <div id="inbox">
+      </div>
+      <div id="input">
+        <form action="/a/message/new" method="post" id="messageform">
+          <table>
+            <tr>
+              <td><input name="body" id="message" style="width:500px" type="text"></td>
+              <td style="padding-left:5px">
+                <input type="submit" value="Gönder">
+              </td>
+            </tr>
+          </table>
+        </form>
+      </div>
+    </div>
+    
   </body>
 </html>

@@ -37,33 +37,53 @@ export class PlainMessage extends Message {
   }
 }
 
-export class PhotoMessage extends Message {
+export class ImageMessage extends Message {
   constructor(args) {
     super(args);
+    [this.data.src,
+      this.data.type,
+      this.data.description
+    ] = [args.src, 'image', args.description];
   }
 }
 
 export class VideoMessage extends Message {
   constructor(args) {
     super(args);
+    [this.data.src,
+      this.data.type,
+      this.data.description
+    ] = [args.src, 'video', args.description];
   }
 }
 
 export class AudioMessage extends Message {
   constructor(args) {
     super(args);
+    [this.data.src,
+      this.data.type,
+      this.data.description
+    ] = [args.src, 'audio', args.description];
   }
 }
 
 export class PdfMessage extends Message {
   constructor(args) {
     super(args);
+    [this.data.src,
+      this.data.type,
+      this.data.description
+    ] = [args.src, 'pdf', args.description];
   }
 }
 
 export class FileMessage extends Message {
   constructor(args) {
     super(args);
+    [this.data.src,
+      this.data.type,
+      this.data.description
+    ] = [args.src, 'file', args.description];
   }
 }
 

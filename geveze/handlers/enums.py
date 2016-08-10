@@ -11,10 +11,11 @@ class MessageTypeEnums(enum.Enum):
     avatar_change = 41
 
     plain = 30
-    photo = 31
+    image = 31
     video = 32
-    pdf = 33
-    file = 34
+    audio = 33
+    pdf = 34
+    file = 35
 
     room = 50
     online_users = 51

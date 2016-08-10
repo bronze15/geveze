@@ -85,7 +85,12 @@ class Room(object):
         self.emit(sender=subscriber, data=dict(type=MessageTypeEnums.unsubscribed.name))
 
     def online_users(self, receiver):
-        data = dict(type='online_users', users=[k.uuid for k in self.subscribers.values()])
+        data = dict(
+            room=dict(
+                name=self.name
+            ),
+            type='online_users',
+            users=[k.uuid for k in self.subscribers.values()])
         receiver.send(json_data=data)
 
     # noinspection PyMethodMayBeStatic

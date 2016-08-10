@@ -20,22 +20,20 @@ export class Geveze {
   }
 
   connect() {
-
     this.ws = new WebSocket(this.url);
 
     this.ws.onopen = (evt) => {
-      console.info(`connection opened: ${evt.target.url}}`);
+      if (this.settings.log) console.info(`connection opened: ${evt.target.url}}`);
       let ws = evt.target;
 
-      this.sendAvatar();
-      this.tests();
+      if (this.settings.send_avatar) this.sendAvatar();
 
+      if (this.settings.test) this.tests();
 
     };
 
     this.ws.onclose = (evt) => {
-      console.warn(`closed: ${evt.target.url}}. code: ${evt.code} reason: ${evt.reason}.`);
-      // console.info('reconnecting....');
+      if (this.settings.log) console.warn(`closed: ${evt.target.url}}. code: ${evt.code} reason: ${evt.reason}.`);
       if (this.settings.recover) this.connect(); // FIXME !!! setTimeout
     };
 
@@ -43,13 +41,18 @@ export class Geveze {
       let data = JSON.parse(evt.data);
       // if (data.type === 'subscribed' || data.type === 'unsubscribed') return;
       // data.date = new Date(data.date);
-      console.log({
+
+      if (this.settings.log) console.log({
         type: data.type,
-        // sender: data.sender,
-        // time: data.date,
+        room: data.room,
+        src: data.src,
+        sender: data.sender,
+        time: data.date,
         body: data.body,
         users: data.users,
       });
+
+      // console.log(data);
     };
 
     this.ws.onerror = (evt) => {
@@ -85,8 +88,37 @@ export class Geveze {
       "intent://scan/#Intent;scheme=zxing;package=com.google.zxing.client.android;end"
     ];
 
+    let images = [
+      'http://placehold.it/200x200/bbaaaa/ffffff?text=image-1',
+      'http://placehold.it/200x200/aabbaa/ffffff?text=image-2',
+      'http://placehold.it/200x200/aaaabb/ffffff?text=image-3',
+    ];
+
+    let videos = [
+      'http://www.sample-videos.com/video/mkv/240/big_buck_bunny_240p_1mb.mkv',
+      'http://www.sample-videos.com/video/mp4/240/big_buck_bunny_240p_1mb.mp4'
+    ];
+
+
+
+    let audios = [
+      'http://www.w3schools.com/html/horse.ogg'
+    ];
+
+    let pdfs = [
+      'http://www.publishers.org.uk/_resources/assets/attachment/full/0/2091.pdf'
+    ];
+    let files = [
+      'http://humanstxt.org/humans.txt'
+    ];
+
     for (let _ of messages) this.sendMessage(_);
-    // console.log(avatar.data);
+    for (let _ of images) this.sendImage(_);
+    for (let _ of videos) this.sendVideo(_);
+
+    for (let _ of audios) this.sendAudio(_);
+    for (let _ of pdfs) this.sendPdf(_);
+    for (let _ of files) this.sendFile(_);
   }
 
 
@@ -111,7 +143,6 @@ export class Geveze {
 
 
   sendMessage(message) {
-    console.warn(message);
 
     let _ = new messages.PlainMessage({
       body: message
@@ -119,7 +150,39 @@ export class Geveze {
 
     this.send(_.data);
 
-    // throw new exceptions.NotImplementedException();
+  }
+
+  sendImage(src, description) {
+
+    let _ = new messages.ImageMessage({
+      src: src
+    });
+    this.send(_.data);
+
+  }
+  sendVideo(src, description) {
+    let _ = new messages.VideoMessage({
+      src: src
+    });
+    this.send(_.data);
+  }
+  sendAudio(src, description) {
+    let _ = new messages.AudioMessage({
+      src: src
+    });
+    this.send(_.data);
+  }
+  sendPdf(src, description) {
+    let _ = new messages.PdfMessage({
+      src: src
+    });
+    this.send(_.data);
+  }
+  sendFile(src, description) {
+    let _ = new messages.FileMessage({
+      src: src
+    });
+    this.send(_.data);
   }
 
   getOnlineUsers() {

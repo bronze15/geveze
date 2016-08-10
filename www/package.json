@@ -12,7 +12,8 @@
     "prod": "brunch build --production"
   },
   "dependencies": {
-    "faker": "^3.1.0"
+    "faker": "^3.1.0",
+    "jquery": "^1.12.4"
   },
   "devDependencies": {
     "auto-reload-brunch": "^2.0.0",

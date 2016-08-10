@@ -10,7 +10,7 @@ class MessageSchemaInfoHandler(tornado.web.RequestHandler):
     def get(self, type=None):
         if type == 'plain':
             schema = geveze.schemas.PlainMessage.get_schema(ordered=True)
-        elif type == 'photo':
+        elif type == 'image':
             schema = geveze.schemas.PhotoMessage.get_schema(ordered=True)
         elif type == 'video':
             schema = geveze.schemas.VideoMessage.get_schema(ordered=True)
