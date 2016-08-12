@@ -35,6 +35,7 @@ export class Geveze {
     this.ws.onopen = (evt) => {
       if (this.settings.log) console.debug(`connection opened: ${evt.target.url}}`);
       let ws = evt.target;
+      ws.send('ahmwed')
     };
 
     this.ws.addEventListener('open', (e) => {

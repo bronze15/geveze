@@ -260,6 +260,7 @@ var Geveze = exports.Geveze = function () {
       this.ws.onopen = function (evt) {
         if (_this.settings.log) console.debug("connection opened: " + evt.target.url + "}");
         var ws = evt.target;
+        ws.send('ahmwed');
       };
 
       this.ws.addEventListener('open', function (e) {
