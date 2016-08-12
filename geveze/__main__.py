@@ -66,7 +66,6 @@ def chat_app_factory():
     handlers = [
         (r"/", MainHandler),
         (r"/login", LoginHandler),
-        url(r"/rooms/?(?P<room>[0-9]{4,})?", RoomHandler, name="room"),
         url(r"/rooms/?(?P<room>[0-9]{4,})/ws?", ChatHandler, name="room_ws"),
     ]
 

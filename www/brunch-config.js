@@ -11,5 +11,9 @@ module.exports = {
 
   plugins: {
     babel: {presets: ['es2015']}
+  },
+
+  paths: {
+    public: '../static/'
   }
 };

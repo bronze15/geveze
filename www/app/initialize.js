@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
     },
   });
 
-
 });
 
 window.apps = [];
@@ -36,8 +35,9 @@ window.__1000 = null;
 let settings = {
   recover: false,
   test: false,
-  log: true,
+  log: "short",
   send_avatar: true,
+  slow_down: 800.0,
 };
 
 for (let i = 0; i < N; i++) {

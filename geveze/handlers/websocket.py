@@ -7,7 +7,7 @@ import tornado.escape
 from geveze.base.websocket_handlers import BaseWebSocketHandler
 import logging
 import uuid
-from geveze.handlers.enums import MessageTypeEnums
+from geveze.handlers.enums import ClientEvents
 from tornado.websocket import WebSocketClosedError
 
 
@@ -40,19 +40,31 @@ class Subscriber(object):
         return self.info.get('uuid')
 
     @property
+    def id(self):
+        return id(self)
+
+    @property
     def info(self):
         return self.__info
 
-    def send(self, json_data):
-        # self.handler.write_message(message=json_data)
-
+    def send(self, data):
         if self.handler.ws_connection is None:
             raise WebSocketClosedError()
-        return self.handler.write_message(json_data, binary=False)
+        return self.handler.write_message(data, binary=False)
 
     def __init__(self, handler):
-        self.__info = dict(uuid=uuid.uuid4().__str__())
+        self.__info = dict(
+            uuid=uuid.uuid4().__str__(),
+            joined=datetime.datetime.now().isoformat())
         self.handler = handler
+
+
+class Subscribers(dict):
+    """
+    TODO
+    implement adding/removing subscribers as events
+    """
+    pass
 
 
 class Room(object):
@@ -72,14 +84,6 @@ class Room(object):
             count=self.subscribers.keys().__len__())
         logging.debug(log)
 
-        data = dict(uuid=uuid.uuid4().__str__(), type=MessageTypeEnums.subscribed.name)
-        notify_data = data.copy()
-        notify_data['type'] = MessageTypeEnums.notify_uuid.name
-        notify_data['me'] = subscriber.uuid
-
-        subscriber.send(json_data=notify_data)
-        self.emit(sender=subscriber, data=data)
-
     def unsubscribe(self, subscriber):
         del self.subscribers[subscriber.uuid]
         # TODO notify and close remotely web socket connection here
@@ -89,72 +93,57 @@ class Room(object):
             count=self.subscribers.keys().__len__())
         logging.debug(log)
 
-        self.emit(
-            sender=subscriber,
-            data=dict(
-                uuid=uuid.uuid4().__str__(),
-                type=MessageTypeEnums.unsubscribed.name))
+    def broadcast2all(self, data):
+        for sender in self.subscribers.values():
+            sender.send(data=data)
 
-    def online_users(self, receiver):
-        data = dict(
-            uuid=uuid.uuid4().__str__(),
-            room=dict(
-                name=self.name
-            ),
-            type='online_users',
-            users=[k.uuid for k in self.subscribers.values()])
-        receiver.send(json_data=data)
+    def broadcast2(self, subscriber, data):
+        raise NotImplementedError()
 
     # noinspection PyMethodMayBeStatic
-    def emit(self, sender, data):
-        try:
-            message_type = MessageTypeEnums[data.get('type')]
-        except KeyError:
-            log = "[!] message from {user} ignored".format(user=sender.uuid, type=data.get('type'))
-            logging.debug(log)
-            return
-
-        if message_type is MessageTypeEnums.plain:
-            data['body'] = MessageHelpers.linkify(data['body'])
-        elif message_type is MessageTypeEnums.online_users:
-            return self.online_users(receiver=sender)
-        else:
-            pass
-
-        log = "{sender} sent a data in: {type}".format(
-            sender=sender.uuid,
-            type=message_type.name)
-
-        logging.debug(log)
-
+    def message_broker(self, sender, data):
+        _type = data['type']
         data['sender'] = sender.uuid
         data['date'] = datetime.datetime.now().isoformat()
 
-        for sender in self.subscribers.values():
-            sender.send(json_data=data)
+        try:
+            message_type = ClientEvents[_type]
+        except KeyError:
+            log = "[!] message from {user} ignored".format(user=data['sender'], type=_type)
+            logging.warn(log)
+            return
+
+        if message_type is ClientEvents.get_avatars:
+            return self.broadcast2(subscriber=sender, data=data)
+
+        if message_type is ClientEvents.send_text:
+            data['body'] = MessageHelpers.linkify(data['body'])
+            return self.broadcast2all(data=data)
+        else:
+            raise KeyError("Unknown message type: %s" % message_type)
 
 
 # noinspection PyAbstractClass
 class ChatHandler(BaseWebSocketHandler):
     CORS_ORIGINS = ['localhost', '7a6907b0.ngrok.io']
 
-    def on_message(self, message):
-        self.room.emit(sender=self.subscriber, data=tornado.escape.json_decode(message))
-
     def __init__(self, *args, **kwargs):
         self.subscriber = Subscriber(handler=self)
         super(ChatHandler, self).__init__(*args, **kwargs)
 
-    # noinspection PyAttributeOutsideInit,PyProtectedMember,PyShadowingBuiltins
-    def open(self, room):
-        if not self.current_user:
-            self.close(403, 'Not authorized. Please login')
+        # noinspection PyAttributeOutsideInit,PyProtectedMember,PyShadowingBuiltins
+        def open(self, room):
+            if not self.current_user:
+                self.close(403, 'Not authorized. Please login')
 
-        if room not in self.application.rooms:
-            self.application.rooms[room] = Room(name=room)
+            if room not in self.application.rooms:
+                self.application.rooms[room] = Room(name=room)
 
-        self.room = self.application.rooms[room]
-        self.room.subscribe(subscriber=self.subscriber)
+            self.room = self.application.rooms[room]
+            self.room.subscribe(subscriber=self.subscriber)
+
+    def on_message(self, message):
+        self.room.message_broker(sender=self.subscriber, data=tornado.escape.json_decode(message))
 
     def on_connection_close(self):
         try:

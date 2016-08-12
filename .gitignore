@@ -133,3 +133,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+
+# Brunch auto generated static files
+static/
