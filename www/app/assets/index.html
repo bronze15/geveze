@@ -17,16 +17,39 @@
     margin: 2px;
     border: thin solid black;
     }
+    /* always present */
+    .expand-transition {
+    transition: all .3s ease;
+    height: 30px;
+    padding: 10px;
+    background-color: #eee;
+    overflow: hidden;
+    }
+    /* .expand-enter defines the starting state for entering */
+    /* .expand-leave defines the ending state for leaving */
+    .expand-enter, .expand-leave {
+    height: 0;
+    padding: 0 10px;
+    opacity: 0;
+    }
     </style>
   </head>
   <body>
-    <div id="app"></div>
-    <div id="inbox">
-    </div>
+
     <div id="avatars">
       
     </div>
     <div id="body">
+      <div id="app">
+        <ul id="inbox">
+          <li v-for="message in plain" track-by="uuid">
+            <div class="message {{ message.is_me ? 'me' : '' }}" v-bind:data-sent="message.date">
+              <span><img v-bind:src="message.avatar.src"/></span>
+              <p>{{{ message.body }}}</p>
+            </div>
+          </li>
+        </ul>
+      </div>
       <div id="inbox">
       </div>
       <div id="input">

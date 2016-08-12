@@ -19,6 +19,32 @@ export class Geveze {
 
   }
 
+
+  send(data) {
+    this.update_ui(data);
+
+    setTimeout(() => {
+      this.ws.send(JSON.stringify(data));
+    }, 0.0);
+  }
+
+  update_ui(data) {
+    if (data.type === 'avatar') {
+      if (data.sender) {
+        application.avatar[data.sender] = data;
+      }
+    } else if (data.sender) {
+      data.avatar = application.avatar[data.sender];
+      data.is_me = data.sender === this.uuid;
+      application[data.type].push(data);
+    } else if (data.type === 'notify_uuid') {
+      this._uuid = data.me;
+
+    } else {
+      application[data.type].push(data);
+    }
+  }
+
   connect() {
     this.ws = new WebSocket(this.url);
 
@@ -44,6 +70,7 @@ export class Geveze {
 
       if (this.settings.log) console.log({
         type: data.type,
+        uuid: data.uuid,
         room: data.room,
         src: data.src,
         sender: data.sender,
@@ -53,6 +80,7 @@ export class Geveze {
       });
 
       // console.log(data);
+      this.update_ui(data);
     };
 
     this.ws.onerror = (evt) => {
@@ -66,13 +94,19 @@ export class Geveze {
     return this._settings;
   }
 
+
+  get uuid() {
+    return this._uuid;
+  }
+
+  set uuid(value) {
+    this._uuid = value;
+  }
+
   set settings(value) {
     this._settings = value;
   }
 
-  send(data) {
-    this.ws.send(JSON.stringify(data));
-  }
 
   close() {
     this.ws.close();
@@ -99,8 +133,6 @@ export class Geveze {
       'http://www.sample-videos.com/video/mp4/240/big_buck_bunny_240p_1mb.mp4'
     ];
 
-
-
     let audios = [
       'http://www.w3schools.com/html/horse.ogg'
     ];
@@ -124,7 +156,7 @@ export class Geveze {
 
   sendAvatar() {
     let avatar = new messages.AvatarMessage({
-      src: this.avatar.src
+      src: this.avatar.src,
     });
 
     this.send(avatar.data);

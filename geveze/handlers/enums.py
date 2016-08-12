@@ -6,6 +6,7 @@ import enum
 
 class MessageTypeEnums(enum.Enum):
     subscribed = 10
+    notify_uuid = 11
     unsubscribed = 20
     avatar = 40
     avatar_change = 41

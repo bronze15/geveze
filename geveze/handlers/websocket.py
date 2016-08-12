@@ -8,6 +8,7 @@ from geveze.base.websocket_handlers import BaseWebSocketHandler
 import logging
 import uuid
 from geveze.handlers.enums import MessageTypeEnums
+from tornado.websocket import WebSocketClosedError
 
 
 class MessageHelpers(object):
@@ -71,7 +72,13 @@ class Room(object):
             count=self.subscribers.keys().__len__())
         logging.debug(log)
 
-        self.emit(sender=subscriber, data=dict(type=MessageTypeEnums.subscribed.name))
+        data = dict(uuid=uuid.uuid4().__str__(), type=MessageTypeEnums.subscribed.name)
+        notify_data = data.copy()
+        notify_data['type'] = MessageTypeEnums.notify_uuid.name
+        notify_data['me'] = subscriber.uuid
+
+        subscriber.send(json_data=notify_data)
+        self.emit(sender=subscriber, data=data)
 
     def unsubscribe(self, subscriber):
         del self.subscribers[subscriber.uuid]
@@ -82,10 +89,15 @@ class Room(object):
             count=self.subscribers.keys().__len__())
         logging.debug(log)
 
-        self.emit(sender=subscriber, data=dict(type=MessageTypeEnums.unsubscribed.name))
+        self.emit(
+            sender=subscriber,
+            data=dict(
+                uuid=uuid.uuid4().__str__(),
+                type=MessageTypeEnums.unsubscribed.name))
 
     def online_users(self, receiver):
         data = dict(
+            uuid=uuid.uuid4().__str__(),
             room=dict(
                 name=self.name
             ),
@@ -135,6 +147,9 @@ class ChatHandler(BaseWebSocketHandler):
 
     # noinspection PyAttributeOutsideInit,PyProtectedMember,PyShadowingBuiltins
     def open(self, room):
+        if not self.current_user:
+            self.close(403, 'Not authorized. Please login')
+
         if room not in self.application.rooms:
             self.application.rooms[room] = Room(name=room)
 
@@ -142,7 +157,10 @@ class ChatHandler(BaseWebSocketHandler):
         self.room.subscribe(subscriber=self.subscriber)
 
     def on_connection_close(self):
-        self.room.unsubscribe(subscriber=self.subscriber)
+        try:
+            self.room.unsubscribe(subscriber=self.subscriber)
+        except:
+            pass
 
     def on_close(self):
         pass

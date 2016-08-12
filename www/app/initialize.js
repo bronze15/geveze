@@ -6,58 +6,49 @@ import $ from "jquery";
 
 window.$ = require('jquery')
 window.jQuery = $;
-
-var faker = require('faker');
+window.Vue = require('vue');
+window.faker = require('faker');
 
 document.addEventListener('DOMContentLoaded', () => {
   console.info('Initialized app');
+
   // avatarFun();
+
+  window.application = new Vue({
+    el: '#app',
+    data: {
+      plain: [],
+      avatar: {},
+      subscribed: [],
+      unsubscribed: [],
+    },
+  });
+
+
 });
-
-
-function avatarFun() {
-  let avatars = [];
-  let N = 24;
-  for (let i = 0; i < N; i++) avatars.push(new helpers.AvatarImage({
-    size: 100, 
-  }));
-
-  for (let _ of avatars) document.querySelector("#avatars").appendChild(_.dom());
-}
 
 window.apps = [];
 
 let N = 1;
-let M = 2;
 
 window.__1000 = null;
-window.__1001 = null;
 
 let settings = {
   recover: false,
   test: false,
   log: true,
-  avatar_send: true,
+  send_avatar: true,
 };
 
 for (let i = 0; i < N; i++) {
+
   __1000 = new geveze.Geveze({
-    url: `ws://localhost:8888/rooms/1000?id=${i}`,
+    url: `ws://localhost:8888/rooms/1000/ws?id=${i}`,
     settings: settings
   });
 
   apps.push(__1000);
 }
-
-
-// for (let i = 0; i < M; i++) {
-//   __1001 = new geveze.Geveze({
-//     url: `ws://localhost:8888/rooms/1001?id=${i}`,
-//     settings: settings
-//   });
-
-//   apps.push(__1001);
-// }
 
 
 $(document).ready(function() {

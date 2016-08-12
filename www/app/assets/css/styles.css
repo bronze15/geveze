@@ -94,22 +94,47 @@ td {
 #body {
     position: absolute;
     bottom: 5vh;
-    left: 10px;
+    /*left: 10px;*/
+    width: 80%;
+    /*padding: 0;*/
+    margin:0 auto;
+}
+
+
+form#messageform {
+    width: 602px;
 }
 
 #input {
     margin-top: 0.5em;
+    width: 500px;
 }
 
 #inbox {
-    width: 96vw;
     margin: 0 auto;
+    width: 640px;
+
     padding: 0;
 }
 
+#app {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
 #inbox .message {
     padding-top: 0.25em;
+    width: 100%;
+    min-height: 48px;
     border-bottom: thin dotted gray;
+}
+
+.message.me {
+    position: relative;
+    text-align: right;
+}
+
+.message.me p {
+    position: relative;
 }
 
 #inbox .info.join {
@@ -123,16 +148,6 @@ td {
 }
 
 img.avatar.join, img.avatar.leave {}
-
-#inbox .message:after,
-#inbox .info.join:after,
-#inbox .info.leave:after {
-    content: attr(data-sent);
-    float: right;
-    right: 0;
-    position: relative;
-    padding: 0.5em 0.5em;
-}
 
 #inbox .message:after {
     color: rgba(0, 0, 0, 0.7);

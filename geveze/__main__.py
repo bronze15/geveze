@@ -11,7 +11,7 @@ import tornado.ioloop
 from tornado.options import define, parse_command_line, options
 from tornado.web import url
 
-from geveze.handlers.request import MainHandler, RoomHandler
+from geveze.handlers.request import MainHandler, RoomHandler, LoginHandler
 from geveze.handlers.schema import MessageSchemaInfoHandler, EventSchemaInfoHandler
 from geveze.handlers.websocket import ChatHandler
 
@@ -65,9 +65,9 @@ def chat_app_factory():
 
     handlers = [
         (r"/", MainHandler),
-        (r"/chat", ChatHandler),
-        url(r"/rooms/?(?P<room>[0-9]{4,})/chat?", RoomHandler, name="room"),
-        url(r"/rooms/?(?P<room>[0-9]{4,})?", ChatHandler, name="room_ws"),
+        (r"/login", LoginHandler),
+        url(r"/rooms/?(?P<room>[0-9]{4,})?", RoomHandler, name="room"),
+        url(r"/rooms/?(?P<room>[0-9]{4,})/ws?", ChatHandler, name="room_ws"),
     ]
 
     return TornadoChatApp(handlers=handlers, **settings)

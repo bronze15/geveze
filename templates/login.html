@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>:: login ::</title>
+</head>
+<body>
+<style>
+    form#messageform {
+        width: 300px;
+        display: block
+    }
+
+    form#messageform label {
+        display: inline-block;
+        position: relative
+    }
+
+    form#messageform input[type=text] {
+        display: inline-block;
+        position: relative
+    }
+
+    form#messageform input[type=button] {
+        width: 100%;
+        display: inline-block;
+        position: relative
+    }
+
+</style>
+<form action="/login" method="post" id="messageform">
+    <div>
+        <label for="username">username</label>
+        <input name="username" type="text" maxlength="10">
+    </div>
+    <div>
+        <label for="password">password</label>
+        <input name="password" type="password">
+    </div>
+
+    <div>
+        <input type="submit" value="{{ _(" Login") }}">
+        <input type="hidden" name="next" value="{{ next }}">
+        {% module xsrf_form_html() %}
+    </div>
+</form>
+
+</body>
+</html>
