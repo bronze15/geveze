@@ -205,10 +205,6 @@ exports.Geveze = undefined;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _socket = require("socket");
-
-var socket = _interopRequireWildcard(_socket);
-
 var _helpers = require("helpers");
 
 var helpers = _interopRequireWildcard(_helpers);
@@ -231,6 +227,56 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 var faker = require('faker');
 
+/*
+Hmm, sesli düşünüyorum.
+şeklinde bir çözüm olur mu?
+
+let events = {
+  save: new Event('save'),
+  publish: new Event('publish'),
+  new: new Event('new'),
+  preview: new Event('preview')
+}
+
+let callbacks = {
+  save: (_) => {},
+  publish: (_) => {},
+  new: (_) => {},
+  preview: (_) => {},
+}
+
+events.forEach(function(e, i, array) {
+  document.addEventListener(e, callbacks[e]);
+});
+*/
+
+var ClientEvents = {
+  send_avatar: 'send_avatar',
+  get_onlineusers: 'get_onlineusers',
+  get_avatars: 'get_avatars',
+  send_text: 'send_text',
+  send_image: 'send_image',
+  send_video: 'send_video',
+  send_audio: 'send_audio',
+  send_pdf: 'send_pdf',
+  send_file: 'send_file'
+};
+
+var ServerEvents = {
+  subscribed: 'subscribed',
+  unsubscribed: 'unsubscribed',
+  send_uuid: 'send_uuid',
+  send_avatars: 'send_avatars',
+  send_avatar: 'send_avatar',
+  send_text: 'send_text',
+  send_image: 'send_image',
+  send_video: 'send_video',
+  send_audio: 'send_audio',
+  send_pdf: 'send_pdf',
+  send_file: 'send_file',
+  send_onlineusers: 'send_onlineusers'
+};
+
 var Geveze = exports.Geveze = function () {
   function Geveze(args) {
     _classCallCheck(this, Geveze);
@@ -238,17 +284,31 @@ var Geveze = exports.Geveze = function () {
     this._settings = args.settings || {
       recover: false
     };
-    this.avatar = new helpers.AvatarImage();
 
+    this.avatar = new helpers.AvatarImage();
     this.url = args.url;
+    this._app = args.app;
     this._retry_interval = 0.5;
+
     this.connect();
   }
 
   _createClass(Geveze, [{
     key: "sendAvatar",
     value: function sendAvatar() {
+      this.send({
+        type: ClientEvents.send_avatar,
+        src: this.avatar.src
+      });
       console.debug('sendAvatar();');
+    }
+  }, {
+    key: "getOnlineUsers",
+    value: function getOnlineUsers() {
+      this.send({
+        type: ClientEvents.get_onlineusers
+      });
+      console.debug('getOnlineUsers();');
     }
   }, {
     key: "connect",
@@ -260,11 +320,16 @@ var Geveze = exports.Geveze = function () {
       this.ws.onopen = function (evt) {
         if (_this.settings.log) console.debug("connection opened: " + evt.target.url + "}");
         var ws = evt.target;
-        ws.send('ahmwed');
       };
 
       this.ws.addEventListener('open', function (e) {
         if (_this.settings.send_avatar) _this.sendAvatar();
+      });
+
+      this.ws.addEventListener('open', function (e) {
+        _this.send({
+          type: ClientEvents.get_avatars
+        });
       });
 
       this.ws.onclose = function (evt) {
@@ -281,10 +346,12 @@ var Geveze = exports.Geveze = function () {
 
       this.ws.onmessage = function (evt) {
         var data = JSON.parse(evt.data);
-        _this.update_ui(data);
+        _this.broker(data);
       };
 
       this.ws.addEventListener('message', function (evt) {
+        var data = JSON.parse(evt.data);
+
         switch (_this.settings.log) {
           case "short":
             console.debug({
@@ -316,26 +383,138 @@ var Geveze = exports.Geveze = function () {
     value: function send(data) {
       var _this2 = this;
 
-      this.update_ui(data);
+      /*
+        Burası (switch) uzayıp gidecek.
+        Minik fonksiyonlara ayırmak lazım.
+      */
+      switch (data.type) {
 
-      setTimeout(function () {
-        _this2.ws.send(JSON.stringify(data));
-      }, this.settings.slow_down);
+        case ClientEvents.send_text:
+          var _ref = [{
+            src: this.avatar.src
+          }, true];
+          data.avatar = _ref[0];
+          data.is_me = _ref[1];
+
+          this.app.messages.push(data);
+
+          setTimeout(function () {
+            _this2.ws.send(JSON.stringify(data));
+          }, this.settings.slow_down);
+
+          break;
+        default:
+          this.ws.send(JSON.stringify(data));
+          break;
+
+      }
     }
   }, {
-    key: "update_ui",
-    value: function update_ui(data) {
+    key: "message",
+    value: function message(text) {
+      this.send({
+        body: text,
+        type: ClientEvents.send_text,
+        uuid: faker.random.uuid()
+      });
+    }
+  }, {
+    key: "broker",
+    value: function broker(data) {
+      /*
+        Burası (switch) uzayıp gidecek.
+        Minik fonksiyonlara ayırmak lazım.
+      */
+
+      console.debug("data type: " + data.type);
       console.debug(data);
+
+      switch (data.type) {
+
+        case ServerEvents.send_uuid:
+          this.uuid = data.uuid;
+          break;
+
+        case ServerEvents.send_avatar:
+          this.app.avatar[data.sender] = data.src;
+          this.getOnlineUsers();
+
+          break;
+
+        case ServerEvents.send_avatars:
+          for (var _ in data.avatars) {
+            this.app.avatar[_] = data.avatars[_];
+          }break;
+
+        case ClientEvents.send_text:
+          var _ref2 = [{
+            src: this.app.avatar[data.sender]
+          }, this.is_me(data)];
+          data.avatar = _ref2[0];
+          data.is_me = _ref2[1];
+
+          this.app.messages.push(data);
+
+          break;
+
+        case ServerEvents.send_onlineusers:
+          // this.app.online_users = data.online_users;
+          this.app.online_users = {};
+          var _iteratorNormalCompletion = true;
+          var _didIteratorError = false;
+          var _iteratorError = undefined;
+
+          try {
+            for (var _iterator = data.online_users[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+              var _2 = _step.value;
+
+              this.app.online_users[_2] = {
+                avatar: this.app.avatar[_2]
+              };
+            }
+          } catch (err) {
+            _didIteratorError = true;
+            _iteratorError = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion && _iterator.return) {
+                _iterator.return();
+              }
+            } finally {
+              if (_didIteratorError) {
+                throw _iteratorError;
+              }
+            }
+          }
+
+          break;
+
+        default:
+          break;
+      }
     }
   }, {
     key: "is_me",
     value: function is_me(data) {
       return data.sender === this.uuid;
     }
+
+    /*
+      Getir götür işleri.
+    */
+
   }, {
     key: "close",
     value: function close() {
       this.ws.close();
+    }
+  }, {
+    key: "app",
+    get: function get() {
+      return this._app;
+    },
+    set: function set(value) {
+      this._app = value;
     }
   }, {
     key: "retry_interval",
@@ -365,31 +544,6 @@ var Geveze = exports.Geveze = function () {
 
   return Geveze;
 }();
-
-var ClientEvents = {
-  send_avatar: 'send_avatar',
-  get_avatars: 'get_avatars',
-  send_text: 'send_text',
-  send_image: 'send_image',
-  send_video: 'send_video',
-  send_audio: 'send_audio',
-  send_pdf: 'send_pdf',
-  send_file: 'send_file'
-};
-
-var ServerEvents = {
-  subscribed: 'subscribed',
-  unsubscribed: 'unsubscribed',
-  send_uuid: 'send_uuid',
-  send_avatars: 'send_avatars',
-  send_text: 'send_text',
-  send_image: 'send_image',
-  send_video: 'send_video',
-  send_audio: 'send_audio',
-  send_pdf: 'send_pdf',
-  send_file: 'send_file',
-  send_onlineusers: 'send_onlineusers'
-};
 });
 
 ;require.register("helpers/bitmap.js", function(exports, require, module) {
@@ -771,10 +925,6 @@ var _messages = require("messages");
 
 var messages = _interopRequireWildcard(_messages);
 
-var _socket = require("socket");
-
-var socket = _interopRequireWildcard(_socket);
-
 var _helpers = require("helpers");
 
 var helpers = _interopRequireWildcard(_helpers);
@@ -799,42 +949,29 @@ window.faker = require('faker');
 document.addEventListener('DOMContentLoaded', function () {
   console.info('Initialized app');
 
-  // avatarFun();
+  var settings = {
+    recover: true,
+    test: false,
+    log: "verbose",
+    send_avatar: true,
+    slow_down: 0.0
+  };
 
-  window.application = new Vue({
+  var app = new Vue({
     el: '#app',
     data: {
-      plain: [],
+      messages: [],
       avatar: {},
-      subscribed: [],
-      unsubscribed: []
+      online_users: {}
     }
   });
-});
 
-window.apps = [];
-
-var N = 1;
-
-window.__1000 = null;
-
-var settings = {
-  recover: false,
-  test: false,
-  log: "short",
-  send_avatar: true,
-  slow_down: 800.0
-};
-
-for (var i = 0; i < N; i++) {
-
-  __1000 = new geveze.Geveze({
+  window.geveze = new geveze.Geveze({
     url: "ws://localhost:8888/rooms/1000/ws?id=" + i,
-    settings: settings
+    settings: settings,
+    app: app
   });
-
-  apps.push(__1000);
-}
+});
 
 (0, _jquery2.default)(document).ready(function () {
   if (!window.console) window.console = {};
@@ -856,10 +993,11 @@ for (var i = 0; i < N; i++) {
 function send(form) {
   var message = form.formToDict();
   if (message.body === "") return;
-  window.__1000.sendMessage(message.body);
+  window.geveze.message(message.body);
   form.find("input[type=text]").val("").select();
 }
 
+// jQuery sen de gidicisin.
 jQuery.fn.formToDict = function () {
   var fields = this.serializeArray();
   var json = {};
@@ -920,70 +1058,6 @@ var Message = exports.Message = function () {
 
   return Message;
 }();
-});
-
-;require.register("socket/events.js", function(exports, require, module) {
-'use strict';
-
-var faker = require('faker');
-
-var onopen = function onopen(evt) {
-  var msg = 'connection opened: ' + evt.target.url + '}';
-  var ws = evt.target;
-  ws.send(JSON.stringify({}));
-  console.info(msg);
-};
-
-var onclose = function onclose(evt) {
-  var msg = 'connection closed: ' + evt.target.url + '}';
-  console.warn(msg);
-};
-
-var onmessage = function onmessage(evt) {
-  var data = JSON.parse(evt.data);
-  // data.date = new Date(data.date);
-  console.table([data]);
-};
-
-var onerror = function onerror(evt) {
-  var data = evt.data;
-  console.warn(data);
-};
-
-module.exports = {
-  onopen: onopen,
-  onclose: onclose,
-  onmessage: onmessage,
-  onerror: onerror
-};
-});
-
-require.register("socket/index.js", function(exports, require, module) {
-"use strict";
-
-var _events = require("socket/events");
-
-var events = _interopRequireWildcard(_events);
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var Connection = function Connection(args) {
-  _classCallCheck(this, Connection);
-
-  this.ws = new WebSocket(args.url);
-  var _ref = [args.onopen, args.onclose, args.onerror, args.onmessage];
-  this.ws.onopen = _ref[0];
-  this.ws.onclose = _ref[1];
-  this.ws.onerror = _ref[2];
-  this.ws.onmessage = _ref[3];
-};
-
-module.exports = {
-  events: events,
-  Connection: Connection
-};
 });
 
 ;require.alias("brunch/node_modules/deppack/node_modules/node-browser-modules/node_modules/process/browser.js", "process");process = require('process');require.register("___globals___", function(exports, require, module) {

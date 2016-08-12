@@ -24,10 +24,13 @@ time, mark, audio, video {
     vertical-align: baseline;
 }
 
-
-
-
-
+div#online-users {
+    position: fixed;
+    top: 25vh;
+    left: 1em;
+    margin: 0;
+    padding: 0;
+}
 
 input#message {
     background-color: transparent;

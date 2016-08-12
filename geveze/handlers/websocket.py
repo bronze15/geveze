@@ -7,7 +7,7 @@ import tornado.escape
 from geveze.base.websocket_handlers import BaseWebSocketHandler
 import logging
 import uuid
-from geveze.handlers.enums import ClientEvents
+from geveze.handlers.enums import ClientEvents, ServerEvents
 from tornado.websocket import WebSocketClosedError
 
 
@@ -52,19 +52,20 @@ class Subscriber(object):
             raise WebSocketClosedError()
         return self.handler.write_message(data, binary=False)
 
+    @property
+    def avatar(self):
+        return self.__avatar
+
+    @avatar.setter
+    def avatar(self, value):
+        self.__avatar = value
+
     def __init__(self, handler):
         self.__info = dict(
             uuid=uuid.uuid4().__str__(),
             joined=datetime.datetime.now().isoformat())
+        self.__avatar = None
         self.handler = handler
-
-
-class Subscribers(dict):
-    """
-    TODO
-    implement adding/removing subscribers as events
-    """
-    pass
 
 
 class Room(object):
@@ -79,6 +80,7 @@ class Room(object):
     def subscribe(self, subscriber):
         subscriber.parse_info()
         self.subscribers[subscriber.uuid] = subscriber
+        self.broadcast2(subscriber=subscriber, data=dict(type=ServerEvents.send_uuid.name, uuid=subscriber.uuid))
         log = "{user} subscribed. Total {count} subscriber".format(
             user=subscriber.uuid,
             count=self.subscribers.keys().__len__())
@@ -93,12 +95,14 @@ class Room(object):
             count=self.subscribers.keys().__len__())
         logging.debug(log)
 
-    def broadcast2all(self, data):
+    # noinspection PyUnusedLocal
+    def broadcast2all(self, sender, data):
         for sender in self.subscribers.values():
             sender.send(data=data)
 
+    # noinspection PyMethodMayBeStatic
     def broadcast2(self, subscriber, data):
-        raise NotImplementedError()
+        subscriber.send(data=data)
 
     # noinspection PyMethodMayBeStatic
     def message_broker(self, sender, data):
@@ -114,11 +118,29 @@ class Room(object):
             return
 
         if message_type is ClientEvents.get_avatars:
-            return self.broadcast2(subscriber=sender, data=data)
-
+            for _ in self.subscribers.values():
+                data = dict(type=ServerEvents.send_avatars.name,
+                            avatars={k: self.subscribers[k].avatar for k in self.subscribers.keys()})
+                self.broadcast2(
+                    subscriber=sender,
+                    data=data)
+            return
         if message_type is ClientEvents.send_text:
             data['body'] = MessageHelpers.linkify(data['body'])
-            return self.broadcast2all(data=data)
+            return self.broadcast2all(sender=sender, data=data)
+
+        elif message_type is ClientEvents.send_avatar:
+            sender.avatar = data['src']
+            return self.broadcast2all(sender=sender, data=data)
+
+        elif message_type is ClientEvents.get_onlineusers:
+            data.update(
+                dict(
+                    online_users=[k for k in self.subscribers.keys()],
+                    type=ServerEvents.send_onlineusers.name
+                ))
+            return self.broadcast2(subscriber=sender, data=data)
+
         else:
             raise KeyError("Unknown message type: %s" % message_type)
 

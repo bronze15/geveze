@@ -40,8 +40,15 @@
     </div>
     <div id="body">
       <div id="app">
+        
+        <div id="online-users">
+          <h3>Online Users</h3>
+          <ul class="online-users">
+            <li v-for="user of online_users"><img v-bind:src="user.avatar"/></li>
+          </ul>
+        </div>
         <ul id="inbox">
-          <li v-for="message in plain" track-by="uuid">
+          <li v-for="message in messages" track-by="uuid">
             <div class="message {{ message.is_me ? 'me' : '' }}" v-bind:data-sent="message.date">
               <span><img v-bind:src="message.avatar.src"/></span>
               <p>{{{ message.body }}}</p>

@@ -9,8 +9,11 @@ venv_dev:
 	$(source "$VIRTUALENVWRAPPER_SCRIPT")
 	$(workon geveze)
 
-ngrok:
+ngrok8888:
 	@ngrok http -subdomain=7a6907b0 8888
+
+ngrok3333:
+	@ngrok http -subdomain=7a6907b0 3333
 
 run: venv
 	@python -m geveze
@@ -28,5 +31,5 @@ pipgrade: venv
 pipgrade_dev: venv_dev
 	@pip install -r geveze/requirements.dev.txt
 
-.PHONY: default run ngrok venv venv_dev debug tests pipgrade pipgrade_dev
+.PHONY: default run ngrok3333 ngrok8888 venv venv_dev debug tests pipgrade pipgrade_dev
 

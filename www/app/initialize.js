@@ -1,5 +1,4 @@
 import * as messages from "messages";
-import * as socket from "socket";
 import * as helpers from "helpers";
 import * as geveze from "./geveze";
 import $ from "jquery";
@@ -12,44 +11,30 @@ window.faker = require('faker');
 document.addEventListener('DOMContentLoaded', () => {
   console.info('Initialized app');
 
-  // avatarFun();
+  let settings = {
+    recover: true,
+    test: false,
+    log: "verbose",
+    send_avatar: true,
+    slow_down: 0.0,
+  };
 
-  window.application = new Vue({
+  let app = new Vue({
     el: '#app',
     data: {
-      plain: [],
+      messages: [],
       avatar: {},
-      subscribed: [],
-      unsubscribed: [],
+      online_users: {},
     },
   });
 
-});
-
-window.apps = [];
-
-let N = 1;
-
-window.__1000 = null;
-
-let settings = {
-  recover: false,
-  test: false,
-  log: "short",
-  send_avatar: true,
-  slow_down: 800.0,
-};
-
-for (let i = 0; i < N; i++) {
-
-  __1000 = new geveze.Geveze({
+  window.geveze = new geveze.Geveze({
     url: `ws://localhost:8888/rooms/1000/ws?id=${i}`,
-    settings: settings
+    settings: settings,
+    app: app
   });
 
-  apps.push(__1000);
-}
-
+});
 
 $(document).ready(function() {
   if (!window.console) window.console = {};
@@ -71,10 +56,11 @@ $(document).ready(function() {
 function send(form) {
   var message = form.formToDict();
   if (message.body === "") return;
-  window.__1000.sendMessage(message.body);
+  window.geveze.message(message.body);
   form.find("input[type=text]").val("").select();
 }
 
+// jQuery sen de gidicisin.
 jQuery.fn.formToDict = function() {
   var fields = this.serializeArray();
   var json = {};
