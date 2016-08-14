@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>:: Video :: </title>
+    <script src="/static/vendor.js"></script>
+    <script src="/static/app.js"></script>
+    <script type="text/javascript">let adapter = require('adapterjs');</script>
+    <link rel="stylesheet" href="/static/css/video.css">
+  </head>
+  <body>
+    <div>
+      <button id="send">Yapıştır 😀 </button>
+
+    </div>
+
+    <div id="videos">
+
+      <div>
+      <video id="gum" autoplay muted></video>
+        <h3>Gerçek Zamanlı Kamera Görüntüsü</h3>
+
+    </div>
+    <div>
+    <video id="recorded" autoplay loop></video>
+      <h3>Kaydedilen Video</h3>
+
+  </div>
+  <div>
+  <video id="remote" autoplay loop></video>
+    <h3>Websocket'ten Gelen Video</h3>
+
+</div>
+</div>
+<div>
+<!--
+<button id="record">Start Recording</button>
+<button id="play" disabled>Play</button>
+<button id="download" disabled>Download</button> -->
+</div>
+<div id="inbox"></div>
+<script>
+require('video/app');
+// require('video/recorder');
+require('video/stream');
+</script>
+</body>
+</html>

@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   window.geveze = new geveze.Geveze({
-    url: `ws://localhost:8888/rooms/1000/ws?id=${i}`,
+    url: `ws://localhost:8888/rooms/1000/ws?id=${faker.internet.userName()}`,
     settings: settings,
     app: app
   });

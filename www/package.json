@@ -12,6 +12,7 @@
     "prod": "brunch build --production"
   },
   "dependencies": {
+    "adapterjs": "^0.13.3",
     "faker": "^3.1.0",
     "jquery": "^1.12.4",
     "vue": "^1.0.26"

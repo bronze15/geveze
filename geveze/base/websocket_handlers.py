@@ -7,10 +7,13 @@ from tornado.util import PY3
 from geveze.base.request_handlers import BaseHandler
 
 if PY3:
+    # noinspection PyCompatibility
     from urllib.parse import urlparse  # py2
 
+    # noinspection PyShadowingBuiltins
     xrange = range
 else:
+    # noinspection PyCompatibility
     from urlparse import urlparse  # py3
 
 

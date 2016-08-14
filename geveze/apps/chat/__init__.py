@@ -1,31 +1,16 @@
 #!/usr/bin/env python
 # coding:utf-8
 import datetime
-
-import tornado.escape
-# noinspection PyCompatibility
-from geveze.base.websocket_handlers import BaseWebSocketHandler
 import logging
 import uuid
-from geveze.handlers.enums import ClientEvents, ServerEvents
+
+import tornado.escape
 from tornado.websocket import WebSocketClosedError
 
-
-class MessageHelpers(object):
-    @staticmethod
-    def js2datetime(time):
-        return datetime.datetime.fromtimestamp(float(time) / 1000)
-
-    @staticmethod
-    def linkify(text):
-        return tornado.escape.linkify(
-            text=text,
-            shorten=False,
-            extra_params='rel="nofollow" class="external" target="_blank"',
-            permitted_protocols=['http', 'https', 'mailto', 'intent'])
-
-
 # noinspection PyAbstractClass
+from geveze.apps.chat.enums import ClientEvents, ServerEvents
+
+
 class Subscriber(object):
     def parse_info(self):
         # noinspection PyProtectedMember
@@ -145,38 +130,17 @@ class Room(object):
             raise KeyError("Unknown message type: %s" % message_type)
 
 
-# noinspection PyAbstractClass
-class ChatHandler(BaseWebSocketHandler):
-    CORS_ORIGINS = ['localhost', '7a6907b0.ngrok.io']
 
-    def __init__(self, *args, **kwargs):
-        self.subscriber = Subscriber(handler=self)
-        super(ChatHandler, self).__init__(*args, **kwargs)
 
-    # noinspection PyAttributeOutsideInit,PyProtectedMember,PyShadowingBuiltins,PyUnusedLocal
-    def open(self, room):
-        if not self.current_user:
-            self.close(403, 'Not authorized. Please login')
+class MessageHelpers(object):
+    @staticmethod
+    def js2datetime(time):
+        return datetime.datetime.fromtimestamp(float(time) / 1000)
 
-        if room not in self.application.rooms:
-            self.application.rooms[room] = Room(name=room)
-
-        self.room = self.application.rooms[room]
-        self.room.subscribe(subscriber=self.subscriber)
-
-    def on_message(self, message):
-        try:
-            data = tornado.escape.json_decode(message)
-        except ValueError as e:  # malformed json or non-json data
-            return self.close(code=None, reason='malformed json or non-json data')
-
-        self.room.message_broker(sender=self.subscriber, data=data)
-
-    def on_connection_close(self):
-        try:
-            self.room.unsubscribe(subscriber=self.subscriber)
-        except:
-            pass
-
-    def on_close(self):
-        pass
+    @staticmethod
+    def linkify(text):
+        return tornado.escape.linkify(
+            text=text,
+            shorten=False,
+            extra_params='rel="nofollow" class="external" target="_blank"',
+            permitted_protocols=['http', 'https', 'mailto', 'intent'])

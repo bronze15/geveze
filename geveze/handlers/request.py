@@ -6,6 +6,16 @@ from geveze.shared.request_handlers import BaseRequestHandler
 
 
 # noinspection PyAbstractClass
+class FreshFileHandler(tornado.web.StaticFileHandler):
+    def set_extra_headers(self, path):
+        # Disable cache
+        self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+
+    def get(self, *args, **kwargs):
+        return super(FreshFileHandler, self).get(*args, **kwargs)
+
+
+# noinspection PyAbstractClass
 class MainHandler(BaseRequestHandler):
     """
     TODO: localization
@@ -14,13 +24,6 @@ class MainHandler(BaseRequestHandler):
     @tornado.web.authenticated
     def get(self):
         self.render('index.html')
-
-
-# noinspection PyAbstractClass
-class RoomHandler(BaseRequestHandler):
-    @tornado.web.authenticated
-    def get(self, room):
-        self.render('room.html', room=room)
 
 
 # noinspection PyAbstractClass,PyAbstractClass

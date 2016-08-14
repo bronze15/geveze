@@ -11,15 +11,9 @@ import tornado.ioloop
 from tornado.options import define, parse_command_line, options
 from tornado.web import url
 
-from geveze.handlers.request import MainHandler, RoomHandler, LoginHandler
-from geveze.handlers.schema import MessageSchemaInfoHandler, EventSchemaInfoHandler
-from geveze.handlers.websocket import ChatHandler
-
-
-class User(object):
-    @property
-    def prefs(self):
-        return None
+from geveze.apps.chat.handlers import ChatHandler
+from geveze.apps.video.handlers import VideoEchoHandler
+from geveze.handlers.request import MainHandler, LoginHandler, FreshFileHandler
 
 
 class TornadoApp(tornado.web.Application):
@@ -41,18 +35,19 @@ def server_factory(application, xheaders=True):
     return tornado.httpserver.HTTPServer(application, xheaders=xheaders)
 
 
-def schema_app_factory():
-    settings = dict()
+def videochat_appfactory():
+    settings = dict(
+        static_path=os.path.join(os.path.dirname(__file__), "..", "static"),
+    )
 
     handlers = [
-        url(r"/schema/messages/?(?P<type>[\w-]+)?", MessageSchemaInfoHandler, name='messages'),
-        url(r"/schema/events/?(?P<type>[\w-]+)?", EventSchemaInfoHandler, name='events')
+        (r'/ws', VideoEchoHandler),
     ]
 
     return TornadoApp(handlers=handlers, **settings)
 
 
-def chat_app_factory():
+def chatapp_factory():
     settings = {
         'autoreload': options.autoreload,
         'debug': options.debug,
@@ -65,6 +60,7 @@ def chat_app_factory():
 
     handlers = [
         (r"/", MainHandler),
+        (r'/ws', VideoEchoHandler),
         (r"/login", LoginHandler),
         url(r"/rooms/?(?P<room>[0-9]{4,})/ws?", ChatHandler, name="room_ws"),
     ]
@@ -80,15 +76,15 @@ if __name__ == "__main__":
 
     parse_command_line()
 
-    ChatApp = chat_app_factory()
-    SchemaApp = schema_app_factory()
+    ChatApp = chatapp_factory()
+    VideoChatApp = videochat_appfactory()
 
     chat_server = server_factory(application=ChatApp, xheaders=True)
     chat_server.bind(8888)
     chat_server.start(num_processes=1)
 
-    schema_server = server_factory(application=SchemaApp, xheaders=False)
-    schema_server.bind(8000)
-    schema_server.start(num_processes=1)
+    # schema_server = server_factory(application=VideoChatApp, xheaders=False)
+    # schema_server.bind(8000)
+    # schema_server.start(num_processes=1)
 
     tornado.ioloop.IOLoop.current().start()

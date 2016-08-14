@@ -1,5 +1,2 @@
 tornado==4.4.1
 enum34
-ua-parser
-websocket-client
-jsonschema

@@ -1,0 +1,38 @@
+video {
+  width: 240px;
+  height: 180px;
+  margin: 0;
+  padding: 0;
+}
+
+video#recorded {
+    background-color: rgba(200, 0,0, 0.5);
+    border: 3px solid red;
+}
+video#gum {
+    background-color: rgba(0, 200, 0, 0.5);
+    border: 3px solid green;
+}
+
+video#remote {
+    background-color: rgba(0, 200, 200, 0.5);
+    border: 3px solid rgb(0, 200, 200);
+}
+
+#videos {
+  display: flex;
+}
+
+#videos div {
+  width: 320px;
+}
+
+#videos div h3 {
+  padding: 0;
+  margin: 0.25em 0;
+  /*font-size: 80%;*/
+}
+
+button#send {
+  margin: 10px 0;
+}
