@@ -21,8 +21,23 @@ document.addEventListener('DOMContentLoaded', (() => {
 })());
 
 let wsFactory = () => {
-  // let ws = new WebSocket('ws://localhost:8888/ws');
-  let ws = new WebSocket('wss://7a6907b0.ngrok.io/ws');
+  function uri() {
+    let hostname, host, protocol, isSecure;
+
+    [hostname, host, protocol, isSecure] = [
+      location.hostname,
+      location.host,
+      location.protocol,
+      location.protocol === 'https:',
+    ];
+
+    let uri = `ws${isSecure ? 's' : ''}://${host}/ws`;
+    return uri;
+  }
+
+  console.debug();
+  let wsUri = uri();
+  let ws = new WebSocket(wsUri);
   return ws;
 };
 

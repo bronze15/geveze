@@ -16,7 +16,7 @@ ngrok3333:
 	@ngrok http -subdomain=7a6907b0 3333
 
 run: venv
-	@python -m geveze
+	@python -Wall -m geveze --logging=debug --autoreload=true --debug=false
 
 debug: venv
 	@python -Wall -m geveze --logging=debug --autoreload=true --debug=true
