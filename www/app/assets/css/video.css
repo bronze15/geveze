@@ -1,38 +1,118 @@
-video {
-  width: 240px;
-  height: 180px;
-  margin: 0;
-  padding: 0;
+/* http://meyerweb.com/eric/tools/css/reset/ 
+   v2.0 | 20110126
+   License: none (public domain)
+*/
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 100%;
+    font: inherit;
+    vertical-align: baseline;
 }
 
-video#recorded {
-    background-color: rgba(200, 0,0, 0.5);
-    border: 3px solid red;
-}
-video#gum {
-    background-color: rgba(0, 200, 0, 0.5);
-    border: 3px solid green;
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+    display: block;
 }
 
-video#remote {
-    background-color: rgba(0, 200, 200, 0.5);
-    border: 3px solid rgb(0, 200, 200);
+body {
+    line-height: 1;
 }
 
-#videos {
-  display: flex;
+ol, ul {
+    list-style: none;
 }
 
-#videos div {
-  width: 320px;
+blockquote, q {
+    quotes: none;
 }
 
-#videos div h3 {
-  padding: 0;
-  margin: 0.25em 0;
-  /*font-size: 80%;*/
+blockquote:before, blockquote:after,
+q:before, q:after {
+    content: '';
+    content: none;
 }
 
-button#send {
-  margin: 10px 0;
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+/*******************************************************************************/
+
+body {
+    background-color: rgba(0, 50, 0, 1);
+}
+
+.video {
+  position: fixed;
+}
+
+.video.remote {
+    background-color: rgba(0, 50, 0, 1);
+    z-index: -1;
+}
+
+.fullwidth {
+    width: 100vw;
+}
+
+.fullheight {
+    height: 100vh;
+}
+
+.halfwidth {
+      width: 50vw;
+}
+
+.halfheight {
+      width: 50vh;
+}
+
+.top {
+    top: 0;
+}
+
+.small {
+    width: 120px;
+    height: 160px;
+}
+
+.bottom {
+    bottom: 0;
+}
+
+.right {
+    right: 0;
+}
+
+.left {
+    left: 0;
+}
+
+
+.video {
+    /*position: fixed;*/
+}
+
+.video.local {
+    background-color: rgba(200, 0, 0, 0.5);
+    outline: thin solid rgb(0, 0, 0);
+    z-index: 0;
+    position: absolute;
 }

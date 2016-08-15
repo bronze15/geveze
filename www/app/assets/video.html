@@ -3,55 +3,27 @@
   <head>
     <meta charset="UTF-8">
     <title>:: Video :: </title>
-
-    <script src="/static/vendor.js"></script>
+    <!--     <script src="/static/vendor.js"></script>
     <script src="/static/app.js"></script>
     <link rel="stylesheet" href="/static/css/video.css">
-
-
-<!--     <script src="/vendor.js"></script>
+    -->
+    <script src="/vendor.js"></script>
     <script src="/app.js"></script>
     <link rel="stylesheet" href="/css/video.css">
- -->
 
-    <script type="text/javascript">let adapter = require('adapterjs');</script>
+    <script>
+    require('video/chat');
+    </script>
 
   </head>
   <body>
-    <div>
-      <button id="send">Yapıştır 😀 </button>
 
-    </div>
+    <!-- <button id="send">Yapıştır 😀 </button> -->
 
     <div id="videos">
-
-      <div>
-      <video id="gum" autoplay muted></video>
-        <h3>Gerçek Zamanlı Kamera Görüntüsü</h3>
-
+      <video class="video local small top left" id="local" autoplay muted></video>
+      <video class="video remote fullheight top" id="remote" autoplay></video>
     </div>
-    <div>
-    <video id="recorded" autoplay loop></video>
-      <h3>Kaydedilen Video</h3>
 
-  </div>
-  <div>
-  <video id="remote" autoplay loop></video>
-    <h3>Websocket'ten Gelen Video</h3>
-
-</div>
-</div>
-<div>
-<!--
-<button id="record">Start Recording</button>
-<button id="play" disabled>Play</button>
-<button id="download" disabled>Download</button> -->
-</div>
-<div id="inbox"></div>
-<script>
-require('video/app');
-// require('video/recorder');
-require('video/stream');
-</script>
-</body>
+  </body>
 </html>

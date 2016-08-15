@@ -19,6 +19,7 @@ module.exports = {
   },
 
   paths: {
-    public: '../static/'
+    // public: '../static/'
+    public: 'public/'
   }
 };
