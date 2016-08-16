@@ -88,6 +88,10 @@ body {
     top: 0;
 }
 
+.qvga {}
+.vga {}
+.hd {}
+
 .small {
     width: 120px;
     height: 160px;

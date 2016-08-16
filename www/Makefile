@@ -1,5 +1,9 @@
 
-default: run
+default: debug
+
+
+debug:
+	@brunch watch --server 
 
 run:
 	@npm run start

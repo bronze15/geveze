@@ -25,37 +25,172 @@ window.addEventListener('load', () => {
 });
 
 
+class BufferHolder {
 
-class Media {
+
+  download(chunk, filename) {
+
+    let a = document.createElement('a');
+    let url = media.src(chunk);
+    a.href = url;
+    a.style.display = 'none';
+
+    a.download = filename;
+    a.innerText = filename;
+
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }, 100);
+  }
 
   constructor() {
-    navigator
-      .mediaDevices
-      .getUserMedia(this.constraints).
-    then((stream) => {
-      this.stream = stream;
-      this.stream.onactive = (a, b) => {
-        console.warn();
-      };
-      if (window.URL) {
-        local.src = window.URL.createObjectURL(stream);
-        remote.src = window.URL.createObjectURL(stream);
-      } else {
-        local.src = stream;
-        remote.src = stream;
-      }
+    setInterval(() => {
+      return;
+      console.warn(`[worker @ ${+ new Date}] | ${media.blobs.length}`);
+      media.download(media.blobs, window.media.filename(0));
+    }, 5000);
+
+  }
+
+  get chunks() {
+    if (typeof(this._chunks) === 'undefined') this._chunks = [];
+    return this._chunks;
+  }
+
+  set chunks(value) {
+    this._chunks = value;
+  }
+
+  set current(value) {
+    this._current = value;
+  }
+
+  get player() {
+    return remote.play().then((evt) => {
+      console.warn('playing')
+    }).catch((err) => {
+      console.error(err);
     })
-      .catch((error) => {
-        console.error(error);
-      });
+  };
+
+  play() {
+
+  }
+  pause() {
+    if (!this.isPaused) this.recorder.pause();
+  }
+
+  resume() {
+    if (this.isPaused) this.recorder.resume();
+  }
+
+  record() {
+    if (this.isRecording) {
+      return;
+    }
+    this.recorder = this.factory.recorder(this.options);
+    this.recorder.start(100);
+    console.log(this.blobs);
+  }
+
+  stop() {
+    if (!this.isRecording) return;
+    this.recorder.stop();
+  }
+
+  get isRecording() {
+    return this.recorder.state === 'recording';
+  }
+
+  get isPaused() {
+    return this.recorder.state === 'paused';
+  }
+
+  blob(data) {
+    return new Blob(data, {
+      type: 'video/webm'
+    });
+  }
+
+  src(data) {
+    return window.URL.createObjectURL(this.blob(data));
+  }
+
+  get blobs() {
+    if (typeof(this._blobs) === 'undefined') this._blobs = [];
+    return this._blobs;
+  }
+
+  set blobs(value) {
+    this._blobs = value;
+  }
+
+  UUID() {
+    /*
+    http://stackoverflow.com/a/105074/1766716
+    */
+    let s4 = () => {
+      return Math.floor((1 + Math.random()) * 0x10000)
+        .toString(16)
+        .substring(1);
+    }
+
+    return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
+  }
+
+  get uuid() {
+    if (typeof(this._uuid) !== 'string') this._uuid = this.UUID();
+    return this._uuid;
+  }
+
+  set uuid(value) {
+    this._uuid = value;
+  }
+
+  filename(index) {
+    return `${this.UUID()}-${index}.webm`;
+  }
+
+}
+
+class Media extends BufferHolder {
+
+  constructor() {
+    super();
+
+    this.init();
 
     this.source = this.factory.source();
 
     this.source.addEventListener('sourceopen', (evt) => {
       this.buffer = this.source.addSourceBuffer('video/webm; codecs="vp8"');
     }, false);
+  }
 
+  init() {
+    this.debug = true;
+    this.blobs = [];
 
+    navigator
+      .mediaDevices
+      .getUserMedia(this.constraints).
+    then((stream) => {
+      this.stream = stream;
+
+      if (this.debug) this.record();
+
+      if (window.URL) {
+        local.src = window.URL.createObjectURL(stream);
+      } else {
+        local.src = stream;
+      }
+    })
+      .catch((error) => {
+        console.error(error);
+      });
   }
 
   get factory() {
@@ -64,13 +199,15 @@ class Media {
         let source = new MediaSource();
         return source;
       },
-      recorder: (stream, options) => {
-        let recorder = new MediaRecorder(stream, options);
-        recorder.onstop = (evt) => {
-          console.log(`Stopped: ${event}`);
-        };
+      recorder: (options) => {
+        let recorder = new MediaRecorder(this.stream, options);
+        recorder.onstop = (evt) => {};
+
+        recorder.onpause = (evt) => {};
+
+        recorder.onresume = (evt) => {};
+
         recorder.ondataavailable = (event) => {
-          console.info(`[data] ${+new Date}. ${this.blobs.length}`);
           if (event.data && event.data.size > 0) {
             this.blobs.push(event.data);
           }
@@ -102,45 +239,24 @@ class Media {
             }
           }
         },
-        video: {
-          audio: false,
-          video: true
-        },
-        audio: {
-          audio: true,
-          video: false
+        default: {
+          video: {
+            audio: false,
+            video: true
+          },
+          audio: {
+            audio: true,
+            video: false
+          }
         }
+
       }
     };
   }
 
-  record() {
-
-    if (this.isRecording) {
-      return;
-    }
-
-    this._recorder = this.factory.recorder(this.stream, this.options);
-    this._recorder.start(10.0);
-    this.isRecording = true;
-
-    // throw new Error("Not Implemented");
-  }
-
-  stop() {
-    if (!this.isRecording) return;
-    this._recorder.stop(1000.0);
-    this.isRecording = false;
-  }
 
   get constraints() {
-
-    const constraints = {
-      audio: false,
-      video: true
-    };
-
-    return constraints;
+    return this.factory.constraints.hd;
   }
 
   get options() {
@@ -167,6 +283,7 @@ class Media {
         }
       }
     }
+    options.bitsPerSecond = 1000000;
     return options;
   }
 
@@ -183,20 +300,6 @@ class Media {
   }
 
 
-  get blob() {
-    return new Blob(this.blobs, {
-      type: 'video/webm'
-    });
-  }
-
-  get src() {
-
-    new Blob(this.blobs, {
-      type: 'video/webm'
-    });
-    return window.URL.createObjectURL(this.blob);
-  }
-
   set source(value) {
     this._source = value;
   }
@@ -212,19 +315,8 @@ class Media {
   get buffer() {
     return this._buffer;
   }
-
   set buffer(value) {
     this._buffer = value;
-  }
-
-  get blobs() {
-    if (typeof(this._blobs) === 'undefined') this._blobs = [];
-
-    return this._blobs;
-  }
-
-  set blobs(value) {
-    this._blobs = value;
   }
 
   get recorder() {
@@ -234,6 +326,7 @@ class Media {
   set recorder(value) {
     this._recorder = value;
   }
+
 
 
 }
