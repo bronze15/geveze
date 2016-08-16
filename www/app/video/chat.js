@@ -4,81 +4,48 @@ import * as socket from "video/socket";
 
 document.addEventListener('DOMContentLoaded', () => {
   console.debug(`[document.DOMContentLoaded] ${+new Date}`);
-  window.media = new Media({
-    dump: false
-  });
-  window.recorder = new Media({
-    dump: true
+
+  // window.recorder = new Media({
+  //   dump: true
+  // });
+
+  window.stream = new Stream(false, {
+    audio: false,
+    video: true
   });
 
-  window.stream = new Stream({
-    constraints: {
-      audio: false,
-      video: true
-    }
+  window.media = new Media({
+    dump: true,
+    stream: window.stream
   });
+
+  media.record();
 });
 
 window.addEventListener('load', () => {
   console.debug(`[window.load] ${+new Date}`);
 });
 
-
-class Stream {
-  constructor(args) {
-    navigator
-      .mediaDevices
-      .getUserMedia(args.constraints).
-    then((stream) => {
-      this.stream = stream;
-      console.log(`1. then: ${new Date().toString()}`);
-    })
-      .catch((error) => {
-        console.error(error);
-      });
-
-    console.log(`2. ctor: ${new Date().toString()}`);
-  }
-
-
-  close() {
-    for (let track of this.stream.getTracks()) track.stop();
-  }
-
+class Recorder {
+  constructor(args) {}
 }
+
+
 
 class BufferHolder {
 
   constructor(args) {}
 
-  pause() {
-    if (!this.isPaused) this.recorder.pause();
-  }
-
-  resume() {
-    if (this.isPaused) this.recorder.resume();
-  }
-
   record() {
-    if (this.isRecording) {
-      return;
-    }
-    this.recorder = this.factory.recorder(this.options);
-    this.recorder.start(100);
-    console.log(this.blobs);
+    this.recorder; // touch getter of recorder needed;
   }
 
   stop() {
-    if (!this.isRecording) return;
     this.recorder.stop();
   }
 
-  get isRecording() {
-    return this.recorder.state === 'recording';
-  }
-
-  get isPaused() {
-    return this.recorder.state === 'paused';
+  close() {
+    this.stream.close();
   }
 
   get blob() {
@@ -127,6 +94,20 @@ class BufferHolder {
 
 }
 
+
+class Stream {
+  constructor(dump = false, constraints) {
+    this.opening = navigator.mediaDevices.getUserMedia(constraints);
+    this.opening
+      .then((stream) => this.stream = stream)
+      .catch((err) => console.error(err));
+  }
+
+  close() {
+    for (let track of this.stream.getTracks()) track.stop();
+  }
+}
+
 class Media extends BufferHolder {
 
   constructor(args) {
@@ -134,40 +115,38 @@ class Media extends BufferHolder {
     args = args || {};
     this.dump = args.dump || false;
     this.bitrate = args.bitrate || 1e6;
-
-    this.source = this.factory.source();
-
-    this.source.addEventListener('sourceopen', (evt) => {
-      this.buffer = this.source.addSourceBuffer('video/webm; codecs="vp8"');
-
-    }, false);
+    this.stream = args.stream;
   }
 
-  open() {
+  get recorder() {
+    if (typeof(this._recorder) === 'undefined') {
+      this.stream.opening
+        .then((stream) => {
+          this.stream.stream = stream;
+          this._recorder = new MediaRecorder(stream, this.options);
 
-    navigator
-      .mediaDevices
-      .getUserMedia(this.constraints).
-    then((stream) => {
-      this.stream = stream;
+          this._recorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+              if (this.dump) this.blobs.push(event.data);
+            }
+          };
 
-      if (this.dump) this.record();
-    })
-      .catch((error) => {
-        console.error(error);
-      });
+          this._recorder.start(100);
+
+        }).catch((err) => {
+          console.error(err)
+        });
+    }
+    return this._recorder;
   }
 
-  close() {
-    for (let track of this.stream.getTracks()) track.stop();
+  set recorder(value) {
+    this._recorder = value;
   }
 
   get factory() {
     return {
-      source: () => {
-        let source = new MediaSource();
-        return source;
-      },
+
       recorder: (options) => {
         let recorder = new MediaRecorder(this.stream, options);
         recorder.onstop = (evt) => {};
@@ -182,43 +161,6 @@ class Media extends BufferHolder {
           }
         }
         return recorder;
-      },
-      constraints: {
-        qvga: {
-          video: {
-            mandatory: {
-              maxWidth: 320,
-              maxHeight: 180
-            }
-          }
-        },
-        vga: {
-          video: {
-            mandatory: {
-              maxWidth: 640,
-              maxHeight: 360
-            }
-          }
-        },
-        hd: {
-          video: {
-            mandatory: {
-              minWidth: 1280,
-              minHeight: 720
-            }
-          }
-        },
-        default: {
-          video: {
-            audio: false,
-            video: true
-          },
-          audio: {
-            audio: true,
-            video: false
-          }
-        }
-
       }
     };
   }
@@ -226,6 +168,46 @@ class Media extends BufferHolder {
 
   get constraints() {
     return this.factory.constraints.hd;
+  }
+
+  get profiles() {
+    return {
+      qvga: {
+        video: {
+          mandatory: {
+            maxWidth: 320,
+            maxHeight: 180
+          }
+        }
+      },
+      vga: {
+        video: {
+          mandatory: {
+            maxWidth: 640,
+            maxHeight: 360
+          }
+        }
+      },
+      hd: {
+        video: {
+          mandatory: {
+            minWidth: 1280,
+            minHeight: 720
+          }
+        }
+      },
+      default: {
+        video: {
+          audio: false,
+          video: true
+        },
+        audio: {
+          audio: true,
+          video: false
+        }
+      }
+
+    }
   }
 
   get options() {
@@ -257,6 +239,13 @@ class Media extends BufferHolder {
   }
 
   get source() {
+    if (typeof(this._source) === 'undefined')
+      this._source = new MediaSource();
+
+    this._source.addEventListener('sourceopen', (evt) => {
+      this.buffer = this.source.addSourceBuffer('video/webm; codecs="vp8"');
+    }, false);
+
     return this._source;
   }
 
@@ -273,35 +262,21 @@ class Media extends BufferHolder {
     this._source = value;
   }
 
-  get stream() {
-    return this._stream;
-  }
 
   get streamSrc() {
     if (window.URL) {
-      return window.URL.createObjectURL(this.stream);
+      return window.URL.createObjectURL(this.stream.stream);
     } else {
-      return this.stream;
+      return this.stream.stream;
     }
   }
 
-  set stream(value) {
-    this._stream = value;
-  }
 
   get buffer() {
     return this._buffer;
   }
   set buffer(value) {
     this._buffer = value;
-  }
-
-  get recorder() {
-    return this._recorder;
-  }
-
-  set recorder(value) {
-    this._recorder = value;
   }
 
 
