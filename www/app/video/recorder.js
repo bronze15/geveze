@@ -7,14 +7,12 @@
  */
 
 
-'use strict';
 
 /* globals MediaRecorder */
 
 // This code is adapted from
 // https://rawgit.com/Miguelao/demos/master/mediarecorder.html
 
-'use strict';
 
 /* globals MediaRecorder */
 

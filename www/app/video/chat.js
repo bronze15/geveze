@@ -2,22 +2,21 @@ window.adapter = require('adapterjs');
 
 import * as socket from "video/socket";
 
-function __(argument) {
-  let ws = socket.factory('ws://echo.websocket.org');
-
-  ws.onopen = (evt) => {
-    ws.send('Merhaba Dünya');
-  };
-
-  ws.onmessage = (evt) => {
-    let msg = `[**] ${evt.data}`;
-    console.debug(msg);;
-  };
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   console.debug(`[document.DOMContentLoaded] ${+new Date}`);
-  window.media = new Media();
+  window.media = new Media({
+    dump: false
+  });
+  window.recorder = new Media({
+    dump: true
+  });
+
+  window.stream = new Stream({
+    constraints: {
+      audio: false,
+      video: true
+    }
+  });
 });
 
 window.addEventListener('load', () => {
@@ -25,60 +24,33 @@ window.addEventListener('load', () => {
 });
 
 
+class Stream {
+  constructor(args) {
+    navigator
+      .mediaDevices
+      .getUserMedia(args.constraints).
+    then((stream) => {
+      this.stream = stream;
+      console.log(`1. then: ${new Date().toString()}`);
+    })
+      .catch((error) => {
+        console.error(error);
+      });
+
+    console.log(`2. ctor: ${new Date().toString()}`);
+  }
+
+
+  close() {
+    for (let track of this.stream.getTracks()) track.stop();
+  }
+
+}
+
 class BufferHolder {
 
+  constructor(args) {}
 
-  download(chunk, filename) {
-
-    let a = document.createElement('a');
-    let url = media.src(chunk);
-    a.href = url;
-    a.style.display = 'none';
-
-    a.download = filename;
-    a.innerText = filename;
-
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function() {
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    }, 100);
-  }
-
-  constructor() {
-    setInterval(() => {
-      return;
-      console.warn(`[worker @ ${+ new Date}] | ${media.blobs.length}`);
-      media.download(media.blobs, window.media.filename(0));
-    }, 5000);
-
-  }
-
-  get chunks() {
-    if (typeof(this._chunks) === 'undefined') this._chunks = [];
-    return this._chunks;
-  }
-
-  set chunks(value) {
-    this._chunks = value;
-  }
-
-  set current(value) {
-    this._current = value;
-  }
-
-  get player() {
-    return remote.play().then((evt) => {
-      console.warn('playing')
-    }).catch((err) => {
-      console.error(err);
-    })
-  };
-
-  play() {
-
-  }
   pause() {
     if (!this.isPaused) this.recorder.pause();
   }
@@ -109,14 +81,14 @@ class BufferHolder {
     return this.recorder.state === 'paused';
   }
 
-  blob(data) {
-    return new Blob(data, {
+  get blob() {
+    return new Blob(this.blobs, {
       type: 'video/webm'
     });
   }
 
-  src(data) {
-    return window.URL.createObjectURL(this.blob(data));
+  get src() {
+    return window.URL.createObjectURL(this.blob);
   }
 
   get blobs() {
@@ -137,7 +109,6 @@ class BufferHolder {
         .toString(16)
         .substring(1);
     }
-
     return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
   }
 
@@ -150,29 +121,29 @@ class BufferHolder {
     this._uuid = value;
   }
 
-  filename(index) {
-    return `${this.UUID()}-${index}.webm`;
+  get filename() {
+    return `${this.UUID()}.webm`;
   }
 
 }
 
 class Media extends BufferHolder {
 
-  constructor() {
+  constructor(args) {
     super();
-
-    this.init();
+    args = args || {};
+    this.dump = args.dump || false;
+    this.bitrate = args.bitrate || 1e6;
 
     this.source = this.factory.source();
 
     this.source.addEventListener('sourceopen', (evt) => {
       this.buffer = this.source.addSourceBuffer('video/webm; codecs="vp8"');
+
     }, false);
   }
 
-  init() {
-    this.debug = true;
-    this.blobs = [];
+  open() {
 
     navigator
       .mediaDevices
@@ -180,17 +151,15 @@ class Media extends BufferHolder {
     then((stream) => {
       this.stream = stream;
 
-      if (this.debug) this.record();
-
-      if (window.URL) {
-        local.src = window.URL.createObjectURL(stream);
-      } else {
-        local.src = stream;
-      }
+      if (this.dump) this.record();
     })
       .catch((error) => {
         console.error(error);
       });
+  }
+
+  close() {
+    for (let track of this.stream.getTracks()) track.stop();
   }
 
   get factory() {
@@ -209,7 +178,7 @@ class Media extends BufferHolder {
 
         recorder.ondataavailable = (event) => {
           if (event.data && event.data.size > 0) {
-            this.blobs.push(event.data);
+            if (this.dump) this.blobs.push(event.data);
           }
         }
         return recorder;
@@ -283,7 +252,7 @@ class Media extends BufferHolder {
         }
       }
     }
-    options.bitsPerSecond = 1000000;
+    options.bitsPerSecond = this.bitrate;
     return options;
   }
 
@@ -308,6 +277,14 @@ class Media extends BufferHolder {
     return this._stream;
   }
 
+  get streamSrc() {
+    if (window.URL) {
+      return window.URL.createObjectURL(this.stream);
+    } else {
+      return this.stream;
+    }
+  }
+
   set stream(value) {
     this._stream = value;
   }
@@ -329,4 +306,9 @@ class Media extends BufferHolder {
 
 
 
+}
+
+
+module.exports = {
+  Media
 }
