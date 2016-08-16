@@ -9,17 +9,29 @@ document.addEventListener('DOMContentLoaded', () => {
   //   dump: true
   // });
 
-  window.stream = new Stream(false, {
+  window.streams = [];
+
+  window.stream = new Stream({
     audio: false,
     video: true
   });
 
+  for (let i = 0; i < 5; i++) streams.push(Object.create(new Stream({
+    audio: false,
+    video: true
+  })));
+  // for (let i = 0; i < 5; i++) streams.push();
   window.media = new Media({
-    dump: true,
-    stream: window.stream
+    dump: false,
+    stream: window.stream,
+    elements: {
+      local: local,
+      remote: remote
+    }
   });
 
   media.record();
+
 });
 
 window.addEventListener('load', () => {
@@ -96,7 +108,7 @@ class BufferHolder {
 
 
 class Stream {
-  constructor(dump = false, constraints) {
+  constructor(constraints) {
     this.opening = navigator.mediaDevices.getUserMedia(constraints);
     this.opening
       .then((stream) => this.stream = stream)
