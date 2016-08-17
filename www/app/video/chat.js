@@ -166,20 +166,7 @@ let initialize = () => {
 
   let pickNext = (evt) => {
     // console.debug(evt);
-    remote.pause();
-    // remote.src = videoBuffers.shift();
-
-    let source = document.querySelector("video#remote source");
-    source.src = videoBuffers.shift();
-
-    remote.load();
-    remote.play();
-    // var source = document.createElement('source');
-    // video.pause();    
-    // source.setAttribute('src', videoBuffers.shift());
-    // remote.appendChild(source);
-    // remote.play();
-
+    remote.src = videoBuffers.shift();
   };
 
   remote.onended = pickNext;
@@ -205,12 +192,7 @@ let initialize = () => {
     window.videoBuffers.push(currentBuffer.src);
     window.currentBuffer = mediaBuffers.shift();
     window.currentBuffer.open();
-    let source = document.querySelector("video#remote source");
-    source.src = videoBuffers.shift();
-
-    remote.load();
-    remote.play();
-    
+    remote.src = videoBuffers.shift();
   }, 1000);
 
 
