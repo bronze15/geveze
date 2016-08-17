@@ -1,4 +1,5 @@
 module.exports = {
+  notifications: true,
   files: {
     javascripts: {
       joinTo: {

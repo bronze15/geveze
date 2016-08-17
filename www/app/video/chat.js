@@ -2,59 +2,280 @@ window.adapter = require('adapterjs');
 
 import * as socket from "video/socket";
 
-document.addEventListener('DOMContentLoaded', () => {
-  console.debug(`[document.DOMContentLoaded] ${+new Date}`);
+window.Profiles = {
+  qvga: {
+    video: {
+      mandatory: {
+        maxWidth: 320,
+        maxHeight: 180
+      }
+    }
+  },
+  vga: {
+    video: {
+      mandatory: {
+        maxWidth: 640,
+        maxHeight: 360
+      }
+    }
+  },
+  hd: {
+    video: {
+      mandatory: {
+        minWidth: 1280,
+        minHeight: 720
+      }
+    }
+  },
+  fullhd: {
+    video: {
+      mandatory: {
+        minWidth: 1920,
+        minHeight: 1080
+      }
+    }
+  },
+  default: {
+    video: {
+      audio: false,
+      video: true
+    },
+    audio: {
+      audio: true,
+      video: false
+    }
+  }
 
-  // window.recorder = new Media({
-  //   dump: true
-  // });
+};
 
-  window.streams = [];
 
-  window.stream = new Stream({
-    audio: false,
-    video: true
+window.buffer;
+window.mediaBuffers = [];
+window.currentBuffer;
+
+window.videoBuffers = [];
+
+
+function handleEvent(e) {
+  // e.timeStamp has different precision in Firefox v Chrome
+  var time;
+  if (window.performance) {
+    time = (window.performance.now() / 1000).toFixed(6);
+  } else {
+    time = ((Date.now() - start) / 1000).toFixed(3);
+  }
+  let msg = `[${e.type}] time: ${time}`;
+  console.debug(msg);
+}
+
+
+var events = [
+  'abort',
+  'autocomplete',
+  'autocompleteerror',
+  'beforecopy ',
+  'beforecut',
+  'beforepaste',
+  'blur',
+  'cancel',
+  'canplay',
+  'canplaythrough',
+  'change',
+  'click',
+  'close',
+  'contextmenu',
+  'copy',
+  'cuechange',
+  'cut',
+  'dblclick',
+  'drag',
+  'dragend',
+  'dragenter',
+  'dragleave',
+  'dragover',
+  'dragstart',
+  'drop',
+  'durationchange',
+  'emptied',
+  'ended',
+  'error',
+  'focus',
+  'input',
+  'invalid',
+  'keydown',
+  'keypress',
+  'keyup',
+  'load',
+  'loadeddata',
+  'loadedmetadata',
+  'loadstart',
+  'needkey',
+  'paste',
+  'pause',
+  'play',
+  'playing',
+  'progress',
+  'ratechange',
+  'reset',
+  'resize',
+  'scroll',
+  'search',
+  'seeked',
+  'seeking',
+  'select',
+  'selectstart',
+  'show',
+  'stalled',
+  'submit',
+  'suspend',
+  'timeupdate',
+  'toggle',
+  'volumechange',
+  'waiting',
+  'webkitfullscreenchange',
+  'webkitfullscreenerror',
+  'webkitkeyadded',
+  'webkitkeyerror',
+  'webkitkeymessage',
+  'webkitneedkey'
+];
+
+window.streamFactory = () => {
+  let stream = Stream.copy(window.stream);
+  return stream;
+};
+
+window.bufferFactory = () => {
+  // console.debug(`[bufferFactory] ${+new Date}`);
+
+  let buffer = new Media({
+    dump: true,
+    bitrate: Math.pow(2, 10) * 1e3, // 1M
+    stream: streamFactory(),
+    player: document.querySelector("video#remote")
   });
+  return buffer;
+};
 
-  for (let i = 0; i < 5; i++) streams.push(Object.create(new Stream({
-    audio: false,
-    video: true
-  })));
-  // for (let i = 0; i < 5; i++) streams.push();
+let initialize = () => {
+  // console.debug(`[document.DOMContentLoaded] ${+new Date}`);
+
+  for (var i = 0; i !== events.length; ++i) {
+    remote.addEventListener(events[i], handleEvent);
+  }
+
+  let pickNext = (evt) => {
+    // console.debug(evt);
+    remote.pause();
+    // remote.src = videoBuffers.shift();
+
+    let source = document.querySelector("video#remote source");
+    source.src = videoBuffers.shift();
+
+    remote.load();
+    remote.play();
+    // var source = document.createElement('source');
+    // video.pause();    
+    // source.setAttribute('src', videoBuffers.shift());
+    // remote.appendChild(source);
+    // remote.play();
+
+  };
+
+  remote.onended = pickNext;
+  remote.onerror = pickNext;
+
+  window.stream = Stream.factory(Profiles.hd);
   window.media = new Media({
     dump: false,
+    bitrate: Math.pow(2, 8) * 1e3, // 256K
     stream: window.stream,
-    elements: {
-      local: local,
-      remote: remote
-    }
+    player: document.querySelector("video#local"),
+    realtime: true,
   });
+  media.open();
+  // Media Object POOL
+  let __POOLSIZE__ = 10;
+  for (let i = 0; i < __POOLSIZE__; i++) mediaBuffers.push(window.bufferFactory());
+  window.currentBuffer = mediaBuffers.shift();
+  window.currentBuffer.open();
 
-  media.record();
+  setTimeout(() => {
+    window.currentBuffer.stop();
+    window.videoBuffers.push(currentBuffer.src);
+    window.currentBuffer = mediaBuffers.shift();
+    window.currentBuffer.open();
+    let source = document.querySelector("video#remote source");
+    source.src = videoBuffers.shift();
 
+    remote.load();
+    remote.play();
+    
+  }, 1000);
+
+
+};
+
+document.addEventListener('DOMContentLoaded', initialize);
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  setInterval(() => {
+    // setTimeout(() => {
+    mediaBuffers.push(window.bufferFactory());
+    currentBuffer.stop();
+    videoBuffers.push(currentBuffer.src);
+    currentBuffer = mediaBuffers.shift();
+    currentBuffer.open();
+  }, 1000);
 });
 
 window.addEventListener('load', () => {
   console.debug(`[window.load] ${+new Date}`);
 });
 
-class Recorder {
-  constructor(args) {}
+class Stream {
+  constructor(constraints, fromstream) {
+    this.constraints = constraints;
+
+    if (fromstream && fromstream.constructor.name === 'MediaStream') {
+      this.stream = fromstream.clone();
+      this.opening = navigator.mediaDevices.getUserMedia(constraints);
+    } else {
+      this.opening = navigator.mediaDevices.getUserMedia(constraints);
+      this.opening
+        .then((stream) => this.stream = stream)
+        .catch((err) => console.error(err));
+    }
+  }
+
+  close() {
+    for (let track of this.stream.getTracks()) track.stop();
+  }
+
+  static copy(stream) {
+    let _ = new Stream(stream.constraints, stream.stream);
+    return _;
+  }
+
+  static factory(constraints) {
+    let _ = new Stream(constraints);
+    return _;
+  }
 }
-
-
 
 class BufferHolder {
 
   constructor(args) {}
 
-  record() {
+  open() {
     this.recorder; // touch getter of recorder needed;
   }
 
   stop() {
     this.recorder.stop();
   }
+
 
   close() {
     this.stream.close();
@@ -106,36 +327,27 @@ class BufferHolder {
 
 }
 
-
-class Stream {
-  constructor(constraints) {
-    this.opening = navigator.mediaDevices.getUserMedia(constraints);
-    this.opening
-      .then((stream) => this.stream = stream)
-      .catch((err) => console.error(err));
-  }
-
-  close() {
-    for (let track of this.stream.getTracks()) track.stop();
-  }
-}
-
 class Media extends BufferHolder {
 
   constructor(args) {
     super();
     args = args || {};
+    this.args = args;
     this.dump = args.dump || false;
     this.bitrate = args.bitrate || 1e6;
     this.stream = args.stream;
+    this.player = args.player || null;
+    this.realtime = args.realtime || false;
   }
 
   get recorder() {
     if (typeof(this._recorder) === 'undefined') {
       this.stream.opening
         .then((stream) => {
+
           this.stream.stream = stream;
           this._recorder = new MediaRecorder(stream, this.options);
+          if (this.realtime) this.player.src = this.streamSrc;
 
           this._recorder.ondataavailable = (event) => {
             if (event.data && event.data.size > 0) {
@@ -175,51 +387,6 @@ class Media extends BufferHolder {
         return recorder;
       }
     };
-  }
-
-
-  get constraints() {
-    return this.factory.constraints.hd;
-  }
-
-  get profiles() {
-    return {
-      qvga: {
-        video: {
-          mandatory: {
-            maxWidth: 320,
-            maxHeight: 180
-          }
-        }
-      },
-      vga: {
-        video: {
-          mandatory: {
-            maxWidth: 640,
-            maxHeight: 360
-          }
-        }
-      },
-      hd: {
-        video: {
-          mandatory: {
-            minWidth: 1280,
-            minHeight: 720
-          }
-        }
-      },
-      default: {
-        video: {
-          audio: false,
-          video: true
-        },
-        audio: {
-          audio: true,
-          video: false
-        }
-      }
-
-    }
   }
 
   get options() {
