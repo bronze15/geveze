@@ -166,7 +166,11 @@ let initialize = () => {
 
   let pickNext = (evt) => {
     // console.debug(evt);
-    remote.src = videoBuffers.shift();
+    try {
+      remote.src = videoBuffers.shift();
+    } catch (err) {
+      console.warn(err);
+    }
   };
 
   remote.onended = pickNext;
@@ -202,7 +206,7 @@ document.addEventListener('DOMContentLoaded', initialize);
 
 
 document.addEventListener('DOMContentLoaded', () => {
-  setInterval(() => {
+  window.videoUpdater = setInterval(() => {
     // setTimeout(() => {
     mediaBuffers.push(window.bufferFactory());
     currentBuffer.stop();
