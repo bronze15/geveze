@@ -53,8 +53,8 @@ def chatapp_factory():
         'debug': options.debug,
         'compress_response': False,
         'serve_traceback': True,
-        'template_path': os.path.join(os.path.dirname(__file__), "..", "templates"),
-        'static_path': os.path.join(os.path.dirname(__file__), "..", "static"),
+        'template_path': os.path.join(os.path.dirname(__file__), "templates"),
+        'static_path': os.path.join(os.path.dirname(__file__), "static"),
         "login_url": "/login",
     }
 
@@ -80,11 +80,7 @@ if __name__ == "__main__":
     VideoChatApp = videochat_appfactory()
 
     chat_server = server_factory(application=ChatApp, xheaders=True)
-    chat_server.bind(8888)
+    chat_server.bind(8000)
     chat_server.start(num_processes=1)
-
-    # schema_server = server_factory(application=VideoChatApp, xheaders=False)
-    # schema_server.bind(8000)
-    # schema_server.start(num_processes=1)
 
     tornado.ioloop.IOLoop.current().start()

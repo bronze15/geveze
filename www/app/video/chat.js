@@ -165,6 +165,7 @@ let initialize = () => {
   }
 
   let pickNext = (evt) => {
+    return; // FIXME FIXME FIXME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // console.debug(evt);
     try {
       remote.src = videoBuffers.shift();
