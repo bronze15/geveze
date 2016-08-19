@@ -49,107 +49,19 @@ window.Profiles = {
 };
 
 
-window.buffer;
-window.mediaBuffers = [];
-window.currentBuffer;
-
 // window.ws = socket.factory(socket.uri());
-window.ws = socket.factory('ws://localhost:8000/ws');
 
-ws.onmessage = (evt) => {
-  // console.debug(evt.data);
-      var superBuffer = new Blob([evt.data], {
-    type: 'video/webm'
-  });
-  remote.src = window.URL.createObjectURL(superBuffer);
-};
+(function socketInit() {
+  window.ws = socket.factory('ws://localhost:8000/ws');
 
-window.videoBuffers = [];
-
-
-function handleEvent(e) {
-  // e.timeStamp has different precision in Firefox v Chrome
-  var time;
-  if (window.performance) {
-    time = (window.performance.now() / 1000).toFixed(6);
-  } else {
-    time = ((Date.now() - start) / 1000).toFixed(3);
-  }
-  let msg = `[${e.type}] time: ${time}`;
-  console.debug(msg);
-}
-
-
-var events = [
-  'abort',
-  'autocomplete',
-  'autocompleteerror',
-  'beforecopy ',
-  'beforecut',
-  'beforepaste',
-  'blur',
-  'cancel',
-  'canplay',
-  'canplaythrough',
-  'change',
-  'click',
-  'close',
-  'contextmenu',
-  'copy',
-  'cuechange',
-  'cut',
-  'dblclick',
-  'drag',
-  'dragend',
-  'dragenter',
-  'dragleave',
-  'dragover',
-  'dragstart',
-  'drop',
-  'durationchange',
-  'emptied',
-  'ended',
-  'error',
-  'focus',
-  'input',
-  'invalid',
-  'keydown',
-  'keypress',
-  'keyup',
-  'load',
-  'loadeddata',
-  'loadedmetadata',
-  'loadstart',
-  'needkey',
-  'paste',
-  'pause',
-  'play',
-  'playing',
-  'progress',
-  'ratechange',
-  'reset',
-  'resize',
-  'scroll',
-  'search',
-  'seeked',
-  'seeking',
-  'select',
-  'selectstart',
-  'show',
-  'stalled',
-  'submit',
-  'suspend',
-  'timeupdate',
-  'toggle',
-  'volumechange',
-  'waiting',
-  'webkitfullscreenchange',
-  'webkitfullscreenerror',
-  'webkitkeyadded',
-  'webkitkeyerror',
-  'webkitkeymessage',
-  'webkitneedkey'
-];
+  ws.onmessage = (evt) => {
+    // console.debug(evt.data);
+    var superBuffer = new Blob([evt.data], {
+      type: 'video/webm'
+    });
+    remote.src = window.URL.createObjectURL(superBuffer);
+  };
+});
 
 window.streamFactory = () => {
   let stream = Stream.copy(window.stream);
@@ -169,69 +81,25 @@ window.bufferFactory = () => {
 };
 
 let initialize = () => {
-  // console.debug(`[document.DOMContentLoaded] ${+new Date}`);
-
-  for (var i = 0; i !== events.length; ++i) {
-    // remote.addEventListener(events[i], handleEvent);
-  }
-
-  let pickNext = (evt) => {
-    return; // FIXME FIXME FIXME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // console.debug(evt);
-    try {
-      remote.src = videoBuffers.shift();
-    } catch (err) {
-      console.warn(err);
-    }
-  };
-
-  remote.onended = pickNext;
-  remote.onerror = pickNext;
 
   window.stream = Stream.factory(Profiles.hd);
+
   window.media = new Media({
-    dump: false,
+    dump: true,
     bitrate: Math.pow(2, 8) * 1e3, // 256K
     stream: window.stream,
     player: document.querySelector("video#local"),
     realtime: true,
   });
-  media.open();
+
+  media.record();
+
   window.currentBuffer = window.bufferFactory();
-  currentBuffer.open();
-  setTimeout(() => {}, 3000)
-
-  let method2 = () => {
-
-    window.playerUpdater = setInterval(() => {
-      window.videoBuffers.push(currentBuffer.src);
-      currentBuffer.close();
-      currentBuffer.stream.close();
-      // remote.src = videoBuffers.pop();
-      ws.send(currentBuffer.blob);
-      videoBuffers = [];
-
-      window.currentBuffer = window.bufferFactory();
-      window.currentBuffer.open();
-
-    }, 1000);
-  };
-  
-  method2();
-
+  return;
 
 };
 
 document.addEventListener('DOMContentLoaded', initialize);
-
-
-document.addEventListener('DOMContentLoaded', () => {
-
-});
-
-window.addEventListener('load', () => {
-  console.debug(`[window.load] ${+new Date}`);
-});
 
 class Stream {
   constructor(constraints, fromstream) {
@@ -249,7 +117,10 @@ class Stream {
   }
 
   close() {
-    for (let track of this.stream.getTracks()) track.stop();
+    for (let track of this.stream.getTracks()) {
+      track.stop();
+      this.stream.removeTrack(track);
+    }
   }
 
   static copy(stream) {
@@ -267,7 +138,7 @@ class BufferHolder {
 
   constructor(args) {}
 
-  open() {
+  record() {
     this.recorder; // touch getter of recorder needed;
   }
 
@@ -456,8 +327,6 @@ class Media extends BufferHolder {
   set buffer(value) {
     this._buffer = value;
   }
-
-
 
 }
 
