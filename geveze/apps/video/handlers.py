@@ -20,7 +20,8 @@ class VideoEchoHandler(BaseWebSocketHandler):
 
     def on_message(self, message):
         logging.info('message came with {0} KB'.format(sys.getsizeof(message)/1024.0))
-        watchers = [_ for _ in VideoEchoHandler.connections if _ is not self]
+        # watchers = [_ for _ in VideoEchoHandler.connections if _ is not self]
+        watchers = [_ for _ in VideoEchoHandler.connections if _ is self]
         for _ in watchers:
             _.write_message(message=message, binary=True)
 

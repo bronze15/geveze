@@ -1,11 +1,4 @@
-let factory = (url) => {
-  if (typeof(url) === 'string'){
-    let ws = new WebSocket(url);
-    ws.binaryType = "arraybuffer";
-    return ws;
-  } 
-
-  function uri() {
+  let uri = () => {
 
     let hostname, host, protocol, isSecure;
 
@@ -16,17 +9,16 @@ let factory = (url) => {
       location.protocol === 'https:',
     ];
 
-    let uri = `ws${isSecure ? 's' : ''}://${host}/ws`;
-    return uri;
+    let _ = `ws${isSecure ? 's' : ''}://${host}/ws`;
+    return _;
   }
 
-  console.debug();
-  let wsUri = uri();
-  let ws = new WebSocket(wsUri);
-  ws.binaryType = "arraybuffer";
-  return ws;
-};
+  let factory = (url) => {
+    let ws = new WebSocket(url);
+    ws.binaryType = "arraybuffer";
+    return ws;
+  };
 
-module.exports = {
-  factory
-}
+  module.exports = {
+    factory, uri
+  }

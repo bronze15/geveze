@@ -53,6 +53,17 @@ window.buffer;
 window.mediaBuffers = [];
 window.currentBuffer;
 
+// window.ws = socket.factory(socket.uri());
+window.ws = socket.factory('ws://localhost:8000/ws');
+
+ws.onmessage = (evt) => {
+  // console.debug(evt.data);
+      var superBuffer = new Blob([evt.data], {
+    type: 'video/webm'
+  });
+  remote.src = window.URL.createObjectURL(superBuffer);
+};
+
 window.videoBuffers = [];
 
 
@@ -150,7 +161,7 @@ window.bufferFactory = () => {
 
   let buffer = new Media({
     dump: true,
-    bitrate: Math.pow(2, 10) * 1e3, // 1M
+    bitrate: Math.pow(2, 9) * 1e3,
     stream: streamFactory(),
     player: document.querySelector("video#remote")
   });
@@ -161,7 +172,7 @@ let initialize = () => {
   // console.debug(`[document.DOMContentLoaded] ${+new Date}`);
 
   for (var i = 0; i !== events.length; ++i) {
-    remote.addEventListener(events[i], handleEvent);
+    // remote.addEventListener(events[i], handleEvent);
   }
 
   let pickNext = (evt) => {
@@ -186,19 +197,27 @@ let initialize = () => {
     realtime: true,
   });
   media.open();
-  // Media Object POOL
-  let __POOLSIZE__ = 10;
-  for (let i = 0; i < __POOLSIZE__; i++) mediaBuffers.push(window.bufferFactory());
-  window.currentBuffer = mediaBuffers.shift();
-  window.currentBuffer.open();
+  window.currentBuffer = window.bufferFactory();
+  currentBuffer.open();
+  setTimeout(() => {}, 3000)
 
-  setTimeout(() => {
-    window.currentBuffer.stop();
-    window.videoBuffers.push(currentBuffer.src);
-    window.currentBuffer = mediaBuffers.shift();
-    window.currentBuffer.open();
-    remote.src = videoBuffers.shift();
-  }, 1000);
+  let method2 = () => {
+
+    window.playerUpdater = setInterval(() => {
+      window.videoBuffers.push(currentBuffer.src);
+      currentBuffer.close();
+      currentBuffer.stream.close();
+      // remote.src = videoBuffers.pop();
+      ws.send(currentBuffer.blob);
+      videoBuffers = [];
+
+      window.currentBuffer = window.bufferFactory();
+      window.currentBuffer.open();
+
+    }, 1000);
+  };
+  
+  method2();
 
 
 };
@@ -207,14 +226,7 @@ document.addEventListener('DOMContentLoaded', initialize);
 
 
 document.addEventListener('DOMContentLoaded', () => {
-  window.videoUpdater = setInterval(() => {
-    // setTimeout(() => {
-    mediaBuffers.push(window.bufferFactory());
-    currentBuffer.stop();
-    videoBuffers.push(currentBuffer.src);
-    currentBuffer = mediaBuffers.shift();
-    currentBuffer.open();
-  }, 1000);
+
 });
 
 window.addEventListener('load', () => {
