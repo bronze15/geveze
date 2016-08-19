@@ -134,11 +134,13 @@ window.Profiles = {
 window.App = {
   queue: [],
   update: () => {
-    remote.src = App.video();
+    let video = App.video();
+    remote.src = video;
+    App.ws.send(App.blob());
   },
   init: {
     first: () => {
-      App.opening = navigator.mediaDevices.getUserMedia(Profiles.qvga);
+      App.opening = navigator.mediaDevices.getUserMedia(Profiles.hd);
       App.opening
         .then((stream) => {
           App.mainstream = stream;
@@ -151,13 +153,15 @@ window.App = {
         .catch((err) => console.error(err));
     },
     media: () => {
-      App.blobs = [];
+
 
       if (typeof(App.recorder) !== 'undefined') App.destroy();
 
       App.opening = navigator.mediaDevices.getUserMedia(Profiles.qvga);
       App.opening
         .then((stream) => {
+          App.blobs = [];
+
           App.stream = stream;
           App.recorder = new MediaRecorder(stream, App.options());
           App.recorder.ondataavailable = (event) => {
@@ -173,6 +177,16 @@ window.App = {
     socket: (url) => {
       App.ws = new WebSocket(url);
       App.ws.binaryType = "arraybuffer";
+
+      App.ws.onmessage = (evt) => {
+        var superBuffer = new Blob([evt.data], {
+          type: 'video/webm'
+        });
+
+        console.debug(`[chunk size: ${superBuffer.size/1024.0} KB] ${new Date().toISOString()}`);
+
+        remotedebug.src = window.URL.createObjectURL(superBuffer);
+      };
     },
   },
   blob: () => {
@@ -228,7 +242,7 @@ window.App = {
         }
       }
     }
-    options.bitsPerSecond = Math.pow(2, 9) * 1e3;
+    options.bitsPerSecond = Math.pow(2, 10) * 1e3;
     return options;
   }
 };
@@ -236,10 +250,15 @@ window.App = {
 document.addEventListener('DOMContentLoaded', (evt) => {
 
   for (var i = 0; i !== events.length; ++i) {
+    continue;
     remote.addEventListener(events[i], handleEvent);
   }
   App.init.first();
-  App.init.media();
+  App.init.socket('ws://localhost:8000/ws');
 
+  setInterval(() => {
+    App.init.media();
+    setTimeout(App.update, 1000);
+  }, 1000);
 
 });
