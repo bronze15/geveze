@@ -14,7 +14,8 @@ class VideoEchoHandler(BaseWebSocketHandler):
 
     def open(self, *args, **kwargs):
         VideoEchoHandler.connections.add(self)
-
+        self.set_nodelay(True) 
+        
         msg = 'connection opened. total:{total}'.format(total=VideoEchoHandler.connections.__len__())
         logging.info(msg=msg)
 

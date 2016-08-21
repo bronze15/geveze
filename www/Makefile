@@ -1,6 +1,4 @@
-
 default: debug
-
 
 debug:
 	@brunch watch --server 
@@ -11,8 +9,8 @@ run:
 prod:
 	@npm run prod
 
-watch:
-	@brunch watch --server --production
+production:
+	@brunch build --production
 
 live:
 	@brunch w --server --production
@@ -22,4 +20,4 @@ deploy: prod
 		git add . --all; \
 		git commit -m "`date`"
 
-.PHONY: default run prod watch live deploy
+.PHONY: default run prod production live deploy

@@ -52,7 +52,8 @@ window.App = {
     player: (evt) => {
       if (App.queue.length > 0) {
         try {
-          let _ = App.queue.shift();
+          let _ = App.queue.pop();
+          App.queue = [];
           remotedebug.src = window.URL.createObjectURL(_);
         } catch (e) {
           console.warn(e);
@@ -283,10 +284,19 @@ window.App = {
 };
 
 document.addEventListener('DOMContentLoaded', (evt) => {
-  const REFRESH_RATE = 3000;
+  const REFRESH_RATE = 500;
 
   App.init.first();
+  
+
+  /*
   App.init.socket('ws://localhost:8000/ws');
+  App.init.socket('wss://7a6907b0.ngrok.io/ws');
+
+  */
+  let uri = `ws${location.protocol === 'https:' ? 's' : ''}://${location.host}/ws`; 
+  console.debug(uri);
+  App.init.socket(uri);
   App.init.player();
 
   (function() {

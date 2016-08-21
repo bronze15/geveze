@@ -20,7 +20,7 @@ module.exports = {
   },
 
   paths: {
-    // public: '../geveze/static/'
-    public: 'public/'
+    public: '../geveze/static/'
+    // public: 'public/'
   }
 };
