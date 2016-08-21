@@ -61,6 +61,7 @@ body {
 
 .video {
   position: fixed;
+  outline: thin solid rgb(0, 0, 0);
 }
 
 .video.remote {
@@ -69,13 +70,12 @@ body {
 }
 
 .video.debug {
-    background-color: rgba(150, 150, 0, 1);
+    background-color: rgba(150, 150, 0, 0.5);
     z-index: :-2;    
 }
 
 .video.local {
     background-color: rgba(200, 0, 0, 0.5);
-    outline: thin solid rgb(0, 0, 0);
     z-index: 0;
     position: absolute;
 }
@@ -110,6 +110,11 @@ body {
     height: 160px;
 }
 
+.small {
+    width: 120px;
+    height: 160px;
+}
+
 .bottom {
     bottom: 0;
 }
@@ -118,6 +123,10 @@ body {
     right: 0;
 }
 
-.left {
+.left.first {
     left: 0;
+}
+
+.left.second {
+    left: 120px;
 }

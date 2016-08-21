@@ -1,90 +1,6 @@
 window.adapter = require('adapterjs');
 
 import * as socket from "video/socket";
-
-
-var events = [
-  'abort',
-  'autocomplete',
-  'autocompleteerror',
-  'beforecopy ',
-  'beforecut',
-  'beforepaste',
-  'blur',
-  'cancel',
-  'canplay',
-  'canplaythrough',
-  'change',
-  'click',
-  'close',
-  'contextmenu',
-  'copy',
-  'cuechange',
-  'cut',
-  'dblclick',
-  'drag',
-  'dragend',
-  'dragenter',
-  'dragleave',
-  'dragover',
-  'dragstart',
-  'drop',
-  'durationchange',
-  'emptied',
-  'ended',
-  'error',
-  'focus',
-  'input',
-  'invalid',
-  'keydown',
-  'keypress',
-  'keyup',
-  'load',
-  'loadeddata',
-  'loadedmetadata',
-  'loadstart',
-  'needkey',
-  'paste',
-  'pause',
-  'play',
-  'playing',
-  'progress',
-  'ratechange',
-  'reset',
-  'resize',
-  'scroll',
-  'search',
-  'seeked',
-  'seeking',
-  'select',
-  'selectstart',
-  'show',
-  'stalled',
-  'submit',
-  'suspend',
-  'timeupdate',
-  'toggle',
-  'volumechange',
-  'waiting',
-  'webkitfullscreenchange',
-  'webkitfullscreenerror',
-  'webkitkeyadded',
-  'webkitkeyerror',
-  'webkitkeymessage',
-  'webkitneedkey'
-];
-
-function handleEvent(e) {
-  // e.timeStamp has different precision in Firefox v Chrome
-  var time;
-  if (window.performance) {
-    time = (window.performance.now() / 1000).toFixed(6);
-  } else {
-    time = ((Date.now() - start) / 1000).toFixed(3);
-  }
-  console.debug(`[player] time: ${time} type: ${e.type}`);
-}
-
 window.Profiles = {
   qvga: {
     video: {
@@ -132,11 +48,25 @@ window.Profiles = {
 };
 
 window.App = {
+  update: {
+    player: (evt) => {
+      if (App.queue.length > 0) {
+        try {
+          let _ = App.queue.shift();
+          remotedebug.src = window.URL.createObjectURL(_);
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+    }
+  },
+  stop: () => {
+    window.clearInterval(App.updater);
+  },
   queue: [],
-  update: () => {
-    let video = App.video();
-    remote.src = video;
+  sync: () => {
     App.ws.send(App.blob());
+    remote.src = App.video();
   },
   init: {
     first: () => {
@@ -153,11 +83,9 @@ window.App = {
         .catch((err) => console.error(err));
     },
     media: () => {
-
-
       if (typeof(App.recorder) !== 'undefined') App.destroy();
 
-      App.opening = navigator.mediaDevices.getUserMedia(Profiles.qvga);
+      App.opening = navigator.mediaDevices.getUserMedia(App.constraints());
       App.opening
         .then((stream) => {
           App.blobs = [];
@@ -174,6 +102,97 @@ window.App = {
         .catch((err) => console.error(err));
 
     },
+    player: () => {
+
+      let pick = (evt) => {
+        App.update.player(evt);
+      };
+
+      remotedebug.addEventListener('ended', pick);
+      remotedebug.addEventListener('error', pick);
+      remotedebug.addEventListener('abort', pick);
+      remotedebug.addEventListener('emptied', pick);
+
+
+      let events = [
+        'abort',
+        'autocomplete',
+        'autocompleteerror',
+        'beforecopy ',
+        'beforecut',
+        'beforepaste',
+        'blur',
+        'cancel',
+        'canplay',
+        'canplaythrough',
+        'change',
+        'click',
+        'close',
+        'contextmenu',
+        'copy',
+        'cuechange',
+        'cut',
+        'dblclick',
+        'drag',
+        'dragend',
+        'dragenter',
+        'dragleave',
+        'dragover',
+        'dragstart',
+        'drop',
+        'durationchange',
+        'emptied',
+        'ended',
+        'error',
+        'focus',
+        'input',
+        'invalid',
+        'keydown',
+        'keypress',
+        'keyup',
+        'load',
+        'loadeddata',
+        'loadedmetadata',
+        'loadstart',
+        'needkey',
+        'paste',
+        'pause',
+        'play',
+        'playing',
+        'progress',
+        'ratechange',
+        'reset',
+        'resize',
+        'scroll',
+        'search',
+        'seeked',
+        'seeking',
+        'select',
+        'selectstart',
+        'show',
+        'stalled',
+        'submit',
+        'suspend',
+        'timeupdate',
+        'toggle',
+        'volumechange',
+        'waiting',
+        'webkitfullscreenchange',
+        'webkitfullscreenerror',
+        'webkitkeyadded',
+        'webkitkeyerror',
+        'webkitkeymessage',
+        'webkitneedkey'
+      ];
+
+      let handleEvent = function handleEvent(e) {
+        console.debug(`[player] type: ${e.type}`);
+      }
+
+      for (var i = 0; i !== events.length; ++i) {
+        remotedebug.addEventListener(events[i], handleEvent);
+      }
+    },
     socket: (url) => {
       App.ws = new WebSocket(url);
       App.ws.binaryType = "arraybuffer";
@@ -185,6 +204,8 @@ window.App = {
 
         console.debug(`[chunk size: ${superBuffer.size/1024.0} KB] ${new Date().toISOString()}`);
 
+        App.queue.push(superBuffer);
+        return;
         remotedebug.src = window.URL.createObjectURL(superBuffer);
       };
     },
@@ -219,6 +240,20 @@ window.App = {
     App.recorder = null;
 
   },
+  constraints: () => {
+    var front = false;
+    var audio = true;
+
+    let _ = Profiles.qvga;
+    _.audio = audio;
+
+    _.video.frameRate = {
+      ideal: 1,
+      max: 1
+    };
+    _.video.facingMode = (front ? "user" : "environment");
+    return _;
+  },
   options: () => {
     var options = {
       mimeType: 'video/webm;codecs=vp9'
@@ -248,17 +283,25 @@ window.App = {
 };
 
 document.addEventListener('DOMContentLoaded', (evt) => {
+  const REFRESH_RATE = 3000;
 
-  for (var i = 0; i !== events.length; ++i) {
-    continue;
-    remote.addEventListener(events[i], handleEvent);
-  }
   App.init.first();
   App.init.socket('ws://localhost:8000/ws');
+  App.init.player();
 
-  setInterval(() => {
-    App.init.media();
-    setTimeout(App.update, 1000);
-  }, 1000);
+  (function() {
+    App.updater = setInterval(() => {
+      App.init.media();
+      setTimeout(App.sync, REFRESH_RATE);
+    }, REFRESH_RATE);
+
+    App.playerChecker = setInterval(() => {
+      if(remotedebug.paused){
+        App.update.player();
+      }
+    }, 250);
+  })();
+
+
 
 });

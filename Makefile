@@ -1,4 +1,4 @@
-default: helpers debug
+default: debug
 
 IMAGE_NAME := guneysu/geveze
 
@@ -7,7 +7,7 @@ BUILD_LATEST = $(IMAGE_NAME):$(shell git rev-parse --short HEAD)
 BUILD_DEV = $(IMAGE_NAME):$(shell git rev-parse --short HEAD)-dev
 BUILD_DIRTY =  $(IMAGE_NAME):$(shell git rev-parse --short HEAD)-dirty
 
-docker_pack: 
+docker_pack:
 	@docker build -t $(BUILD_TEST) geveze
 	@docker build -t $(BUILD_LATEST) geveze
 	@docker build -t $(BUILD_DEV) geveze
@@ -21,7 +21,7 @@ docker_push:
 
 docker_run: docker_pack
 	@xdg-open http://172.17.0.2:8000 2>/dev/null
-	@docker run -it $(BUILD_TEST) 
+	@docker run -it $(BUILD_TEST)
 
 ngrok8888:
 	@ngrok http -subdomain=7a6907b0 8888
@@ -29,22 +29,20 @@ ngrok8888:
 ngrok3333:
 	@ngrok http -subdomain=7a6907b0 3333
 
-run: 
-	@python -Wall -m geveze --logging=debug --autoreload=true --debug=false
+run:
+	@python -Wall -m geveze --logging=info --autoreload=false --debug=false
 
-debug: 
+debug:
 	@python -Wall -m geveze --logging=debug --autoreload=true --debug=true
 
 tests:
 	@python tests/__init__.py
 
-
-pipgrade: 
+pipgrade:
 	@pip install -r geveze/requirements.txt
 
-pipgrade_dev: 
+pipgrade_dev:
 	@pip install -r geveze/requirements.dev.txt
-
 
 .PHONY: default run debug tests pipgrade pipgrade_dev \
 				ngrok3333 ngrok8888 \

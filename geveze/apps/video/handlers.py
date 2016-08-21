@@ -16,7 +16,7 @@ class VideoEchoHandler(BaseWebSocketHandler):
         VideoEchoHandler.connections.add(self)
 
         msg = 'connection opened. total:{total}'.format(total=VideoEchoHandler.connections.__len__())
-        logging.debug(msg=msg)
+        logging.info(msg=msg)
 
     def on_message(self, message):
         logging.info('message came with {0} KB'.format(sys.getsizeof(message)/1024.0))
@@ -28,9 +28,9 @@ class VideoEchoHandler(BaseWebSocketHandler):
     def on_connection_close(self):
         VideoEchoHandler.connections.remove(self)
         msg = 'connection closed. total:{total}'.format(total=VideoEchoHandler.connections.__len__())
-        logging.debug(msg=msg)
+        logging.info(msg=msg)
 
     def on_close(self):
         VideoEchoHandler.connections.remove(self)
         msg = '*** connection closed. total:{total}'.format(total=VideoEchoHandler.connections.__len__())
-        logging.debug(msg=msg)
+        logging.info(msg=msg)
