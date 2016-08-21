@@ -2,8 +2,7 @@ default: debug
 
 IMAGE_NAME := guneysu/geveze
 
-BUILD_TEST = $(IMAGE_NAME):test
-BUILD_LATEST = $(IMAGE_NAME):$(shell git rev-parse --short HEAD)
+BUILD_LATEST = $(IMAGE_NAME):latest
 BUILD_DEV = $(IMAGE_NAME):$(shell git rev-parse --short HEAD)-dev
 BUILD_DIRTY =  $(IMAGE_NAME):$(shell git rev-parse --short HEAD)-dirty
 
@@ -11,16 +10,12 @@ static:
 	$(MAKE) -C www prod
 
 docker_pack:
-	@docker build -t $(BUILD_TEST) geveze
 	@docker build -t $(BUILD_LATEST) geveze
 	@docker build -t $(BUILD_DEV) geveze
 	@docker build -t $(BUILD_DIRTY) geveze
 
-docker_push:
-	@docker push $(BUILD_TEST)
+docker_push: docker_pack
 	@docker push $(BUILD_LATEST)
-	@docker push $(BUILD_DEV)
-	@docker push $(BUILD_DIRTY)
 
 docker_run: docker_pack
 	@xdg-open http://localhost:8001/static/video.html 2>/dev/null
@@ -38,7 +33,8 @@ run:
 debug:
 	@python -Wall -m geveze --logging=debug --autoreload=true --debug=true
 
-tests:
+tests: docker_pack
+	@docker run --publish 8000:8000 -it guneysu/geveze:latest
 	@python tests/__init__.py
 
 pipgrade:

@@ -23,7 +23,7 @@ class MainHandler(BaseRequestHandler):
 
     @tornado.web.authenticated
     def get(self):
-        self.render('index.html')
+        self.redirect('/static/video.html', permanent=False)
 
 
 # noinspection PyAbstractClass,PyAbstractClass
